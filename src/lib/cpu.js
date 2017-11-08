@@ -60,7 +60,7 @@ export const NOP = () => {}
 // TODO: NOP, JLT, JGT, JEQ, IN, 
 //       OUT, MOD, SR, SL, PUSH, 
 //       POP, CALL, RET, AND, OR, 
-//       XOR, INTR, HALT, LOG
+//       XOR, INTR, HALT, LOG, RAND
 // TODO: COMPLIER 
 // TODO: RUNTIME (clock)
 // TODO: IMPLMENT DEVICES (LCD, BUZZER, MEMORY_POKER)

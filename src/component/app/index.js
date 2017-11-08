@@ -9,7 +9,14 @@ window.memory = memory
 class App extends React.Component {
   constructor(props){
     super(props)
-    this.state = {}
+    this.state = {
+      A:0, 
+      B:0,
+      C:0,
+      D:0,
+      PC: 0,
+      raw: [],
+    }
   }
 
   componentDidUpdate(){
@@ -25,10 +32,10 @@ class App extends React.Component {
         D: cpu.REGISTERS.D,
         PC: cpu.PC,
         raw: memory.memory.slice(0, 256).reduce((r, n, i) => {
-          r += util.hexByte(n) + ' '
+          r += util.toHexWord(n) + ' '
           if(i === 255) return r
           if(i % 8 === 7)
-            r += `\nx${util.hexByte(i + 1)} -- `
+            r += `\nx${util.toHexWord(i + 1)} -- `
           return r
         }, 'x00 -- '),
       })
@@ -39,11 +46,11 @@ class App extends React.Component {
     let {A, B, C, D, PC, raw} = this.state
     return (
       <div className='app'>
-        <p> [PC] dec: {PC} hex: x{util.pcToHex(PC)} </p>
-        <p> [A] dec: {A} hex: x{util.hexByte(A)} </p>
-        <p> [B] dec: {B} hex: x{util.hexByte(B)} </p>
-        <p> [C] dec: {C} hex: x{util.hexByte(C)} </p>
-        <p> [D] dec: {D} hex: x{util.hexByte(D)} </p>
+        <p> [PC] dec: {PC} hex: x{util.toHexWord(PC)} </p>
+        <p> [A] dec: {A} hex: x{util.toHexWord(A)} </p>
+        <p> [B] dec: {B} hex: x{util.toHexWord(B)} </p>
+        <p> [C] dec: {C} hex: x{util.toHexWord(C)} </p>
+        <p> [D] dec: {D} hex: x{util.toHexWord(D)} </p>
         <p> [MEM] </p>
         <pre>{raw}</pre>
       </div>

@@ -65,6 +65,7 @@ export const gt = (a) => (b) => b > a
 
 export const numToHex = (num) => Number(num).toString(16) 
 export const hexToNum = (hex) => parseInt(hex, 16)
+export const hexNormalize = (hex) => hex.length === 1 ? `0${hex}` : hex
 
 export const rand = (max) => Math.floor(Math.random() * max)
 export const rand8 = () => rand(8)

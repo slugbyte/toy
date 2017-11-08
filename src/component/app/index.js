@@ -1,4 +1,3 @@
-
 import * as cpu from '../../lib/cpu.js'
 import * as util from '../../lib/util.js'
 import * as memory from '../../lib/memory.js'
@@ -24,13 +23,12 @@ class App extends React.Component {
         B: cpu.REGISTERS.B,
         C: cpu.REGISTERS.C,
         D: cpu.REGISTERS.D,
+        PC: cpu.PC,
         raw: memory.memory.slice(0, 256).reduce((r, n, i) => {
-          let hex = util.numToHex(n)
-          r += util.hexNormalize(hex)
-          r += ' '
+          r += util.hexByte(n) + ' '
           if(i === 255) return r
           if(i % 8 === 7)
-            r += `\nx${util.hexNormalize(util.numToHex(i + 1))} -- `
+            r += `\nx${util.hexByte(i + 1)} -- `
           return r
         }, 'x00 -- '),
       })
@@ -38,13 +36,14 @@ class App extends React.Component {
   }
 
   render(){
-    let {A, B, C, D, raw} = this.state
+    let {A, B, C, D, PC, raw} = this.state
     return (
       <div className='app'>
-        <p> [A] dec: {A} hex:{util.numToHex(A)} </p>
-        <p> [B] dec: {B} hex:{util.numToHex(B)} </p>
-        <p> [C] dec: {C} hex:{util.numToHex(C)} </p>
-        <p> [D] dec: {D} hex:{util.numToHex(D)} </p>
+        <p> [PC] dec: {PC} hex: x{util.pcToHex(PC)} </p>
+        <p> [A] dec: {A} hex: x{util.hexByte(A)} </p>
+        <p> [B] dec: {B} hex: x{util.hexByte(B)} </p>
+        <p> [C] dec: {C} hex: x{util.hexByte(C)} </p>
+        <p> [D] dec: {D} hex: x{util.hexByte(D)} </p>
         <p> [MEM] </p>
         <pre>{raw}</pre>
       </div>

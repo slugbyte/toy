@@ -10,9 +10,11 @@ export const subscribe = (cb) => {
   subscribers.push(cb)
 }
 
-export const set = (index, value) => {
+export const set = (value, index) => {
   index = util.isString(index) ? util.hexToNum(index) : index  
   value = util.isString(value) ? util.hexToNum(value) : value  
+
+  util.log({index, value})
 
   if(util.in1024(index) && util.in256(value))
     memory[index] = value

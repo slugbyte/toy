@@ -65,7 +65,25 @@ export const gt = (a) => (b) => b > a
 
 export const numToHex = (num) => Number(num).toString(16) 
 export const hexToNum = (hex) => parseInt(hex, 16)
-export const hexNormalize = (hex) => hex.length === 1 ? `0${hex}` : hex
+export const hexNormalize = (hex) => {
+  return hex.length === 1 ? `0${hex}` : hex
+}
+
+export const hexByte = (value) => {
+  value = isString(value) ? hexToNum(value) : value
+  value = Math.max(value, 0)
+  value = Math.min(value, 255)
+  return hexNormalize(numToHex(value))
+}
+
+export const pcToHex = (pc) => {
+  pc = isString(pc) ? hexToNum(pc) : pc
+  pc = Math.max(pc, 0)
+  pc = Math.min(pc, 1024)
+  let hex = numToHex(pc)
+  let zeros = new Array(4 - hex.length).fill(0).join('')
+  return zeros + hex
+}
 
 export const rand = (max) => Math.floor(Math.random() * max)
 export const rand8 = () => rand(8)

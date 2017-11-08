@@ -39,6 +39,8 @@ export const del = (key) => (collection) => {
 export const inRange = (min, max) => (value) => value > min && value < max
 export const inURange = (max) => inRange(-1, max)
 
+export const limit = (min, max, value) => Math.max(min, Math.min(max, value))
+
 export const in8 = inURange(8)
 export const in16 = inURange(16)
 export const in32 = inURange(32)
@@ -65,32 +67,5 @@ export const gt = (a) => (b) => b > a
 
 export const numToHex = (num) => Number(num).toString(16) 
 export const hexToNum = (hex) => parseInt(hex, 16)
-export const hexNormalize = (hex) => {
-  return hex.length === 1 ? `0${hex}` : hex
-}
-
-export const hexByte = (value) => {
-  value = isString(value) ? hexToNum(value) : value
-  value = Math.max(value, 0)
-  value = Math.min(value, 255)
-  return hexNormalize(numToHex(value))
-}
-
-export const pcToHex = (pc) => {
-  pc = isString(pc) ? hexToNum(pc) : pc
-  pc = Math.max(pc, 0)
-  pc = Math.min(pc, 1024)
-  let hex = numToHex(pc)
-  let zeros = new Array(4 - hex.length).fill(0).join('')
-  return zeros + hex
-}
 
 export const rand = (max) => Math.floor(Math.random() * max)
-export const rand8 = () => rand(8)
-export const rand16 = () => rand(16)
-export const rand32 = () => rand(32)
-export const rand64 = () => rand(64)
-export const rand128 = () => rand(128)
-export const rand256 = () => rand(256)
-export const rand512 = () => rand(512)
-export const rand1024 = () => rand(1024)

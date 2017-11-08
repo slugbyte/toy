@@ -4,33 +4,25 @@
 import * as util from './util.js'
 import * as memory from './memory.js'
 
+// CONSTANTS
+export const WORD_SIZE = 2
+
+
+// STATE
 export let HALTED = false
 export let PC = 0x00
-export const REGISTERS = {
-  A: 0,
-  B: 0,
-  C: 0,
-  D: 0,
+export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 }
+
+// HELPERS
+export const isRegister = (value) => /[A-D]/.test(value)
+export const isConstant = (value) => /[a-f0-9][a-f0-9]/.test(value)
+export const isPointer = (value) => /x[a-f0-9][a-f0-9]/.test(value)
+
+export const toHexByte = (value) => {
 }
 
-let COMMANDS = [
-  'NOP',
-  'MOV',
-  'ADD',
-  'SUB',
-  'JMP',
-  'JLT',
-  'JGT',
-  'JEQ',
-  'HALT',
-]
-
-// REG ABCD
-// MEM xfa5
-// CON fa
-export const isRegister = (value) => /[A-D]/.test(value)
-export const isPointer= (value) =>  /x[a-f0-9][a-f0-9]/.test(value)
-export const isConstant = (value) =>  /[a-f0-9][a-f0-9]/.test(value)
+export const toHexWord = (value) => {
+}
 
 export const toValue = (SRC) => {
   if(isRegister(SRC)) return REGISTERS[SRC]
@@ -39,6 +31,7 @@ export const toValue = (SRC) => {
   throw new Error('toValue error SRC unsuported')
 }
 
+// INSTRUCTIONS
 export const MOV = (SRC, DST) => {
   if(isRegister(DST)) REGISTERS[DST] = toValue(SRC)
   if(isPointer(DST)) memory.set(toValue(SRC), DST.substr(1))
@@ -62,35 +55,12 @@ export const JMP = (DST) => {
    PC = Math.min(Math.max(toValue(DST), 0), memory.CAPACITY -1)
 }
 
-export const exec = (CMD, SRC, DST, CND) => {
-  switch (CMD){
-    case 'NOP':
-      break;
-    case 'MOV':
-      MOV(SRC, DST)
-      break;
-    case 'ADD':
-      ADD(SRC, DST)
-      break;
-    case 'SUB':
-      SUB(SRC, DST)
-      break;
-    case 'JMP':
-      JMP(SRC)
-      break;
-    case 'JLT':
-      // JMP DST
-      break;
-    case 'JGT':
-      // JMP SRC DST CND
-      break;
-    case 'JEQ':
-      // JMP SRC DST CND
-      break;
-    case 'HLT':
-      HALTED = true
-      break;
-  }
-  PC++
-}
+export const NOP = () => {}
 
+// TODO: NOP, JLT, JGT, JEQ, IN, 
+//       OUT, MOD, SR, SL, PUSH, 
+//       POP, CALL, RET, AND, OR, 
+//       XOR, INTR, HALT, LOG
+// TODO: COMPLIER 
+// TODO: RUNTIME (clock)
+// TODO: IMPLMENT DEVICES (LCD, BUZZER, MEMORY_POKER)

@@ -8,6 +8,7 @@ class Bug extends Error {
   }
 }
 
+// string -> tokens
 export const tokenizer = (program) => {
   return program.trim().split('\n').map(statement => {
     return statement.trim().split(' ').map(token => ({
@@ -20,6 +21,7 @@ export const tokenizer = (program) => {
 }
 
 
+// tokens -> AST
 export const parser = (tokens) => {
   let wasJUMP = false
   let isJUMP = (token) => {
@@ -60,8 +62,8 @@ export const parser = (tokens) => {
           instruction.params.push(token)
         } else {
           program.body.push({
-            ...token,
             body: [],
+            ...token,
           })
         }
         break;
@@ -74,8 +76,8 @@ export const parser = (tokens) => {
           })
         isJUMP(token)
         label.body.push({
-          ...token,
           params: [],
+          ...token,
         })
         break;
       //ARGUMENTS
@@ -99,6 +101,60 @@ export const parser = (tokens) => {
   return program
 }
 
+// BYTECODE DEF
+// Instruction  WORD [VALUE]
+// Register     BYTE BYTE [TYPE] [VALUE]
+// Pointer      BYTE WORD [TYPE] [VALUE]
+// Constant     BYTE WORD [TYPE] [VALUE]
+// Pin          BYTE WORD [TYPE] [VALUE]
+
+// AST -> bytecode
+export const transform = (ast) => {
+  // compile program
+  //   compile label
+  //     compile instruction 
+  //     compile argument
+  //     compute label pointers
+  let typeToByte = (type) => util.toHexByte(cpu._TYPES.indexOf(type))
+  let toByteCode = (token) => {
+    switch(token.type){
+      case 'INSTRUCTION':
+        return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value))
+      case 'REGISTER':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value))
+      case 'CONSTANT':
+        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
+      case 'POINTER':
+        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
+      case 'PIN':
+        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
+      case 'LABEL':
+        return `(${token.value})`
+    }
+  }
+
+  return ast.body.map(label => {
+    let instructions = label.body.map(instruction => {
+      let params = instruction.params.map(param => {
+        // param bytecode and size
+        let bytecode = toByteCode(param)
+        let size = param.type === 'LABEL' ? 3 : bytecode.length / 2
+        return {param, bytecode, size}
+      })
+
+      // instruction bytecode and size
+      let instructionWord = toByteCode(instruction)
+      let bytecode = [instructionWord].concat(params.map(p => p.bytecode).join('')).join('')
+      let size = params.reduce((r, p) => p.size + r, 2)
+      return {instruction, instructionWord, params, bytecode, size}
+    })
+
+    // label bytecode and size
+    let bytecode = instructions.map(c => c.bytecode).join('')
+    let size = instructions.reduce((r, i) => r + i.size, 0)
+    return {label, instructions, bytecode, size}
+  })
+}
 
 
 export const compile = (program) => {

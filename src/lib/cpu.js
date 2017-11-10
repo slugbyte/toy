@@ -9,7 +9,7 @@ export const WORD_SIZE = 2
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
 export const _REGISTERS = ['P', 'A', 'B', 'C', 'D', 'I']
 export const _TYPES = [
-  'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'LABEL'
+  'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
 ]
 export const _INSTRUCTIONS = [ 
   'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 

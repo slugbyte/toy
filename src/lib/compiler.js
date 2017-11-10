@@ -133,7 +133,8 @@ export const transform = (ast) => {
     }
   }
 
-  return ast.body.map(label => {
+  let lastSize = 0
+  let labels = ast.body.map(label => {
     let instructions = label.body.map(instruction => {
       let params = instruction.params.map(param => {
         // param bytecode and size
@@ -151,9 +152,16 @@ export const transform = (ast) => {
 
     // label bytecode and size
     let bytecode = instructions.map(c => c.bytecode).join('')
+    let offset = lastSize 
     let size = instructions.reduce((r, i) => r + i.size, 0)
-    return {label, instructions, bytecode, size}
+    lastSize += size
+    return {label, instructions, bytecode, size, offset}
   })
+
+  // program bytecode and size
+  let bytecode = labels.map(l => l.bytecode).join('')
+  let size = labels.reduce((r, l) => r + l.size, 0)
+  return {ast, labels, bytecode, size}
 }
 
 

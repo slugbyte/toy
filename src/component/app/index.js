@@ -1,10 +1,12 @@
 import * as cpu from '../../lib/cpu.js'
 import * as util from '../../lib/util.js'
 import * as memory from '../../lib/memory.js'
+import * as compiler from '../../lib/compiler.js'
 
 window.cpu = cpu
 window.util = util
 window.memory = memory
+window.compiler = compiler
 
 class App extends React.Component {
   constructor(props){
@@ -32,12 +34,12 @@ class App extends React.Component {
         D: cpu.REGISTERS.D,
         PC: cpu.PC,
         raw: memory.memory.slice(0, 256).reduce((r, n, i) => {
-          r += util.toHexWord(n) + ' '
+          r += util.toHexByte(n) + ' '
           if(i === 255) return r
           if(i % 8 === 7)
             r += `\nx${util.toHexWord(i + 1)} -- `
           return r
-        }, 'x00 -- '),
+        }, 'x0000 -- '),
       })
     }, 250)
   }

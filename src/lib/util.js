@@ -61,9 +61,9 @@ export const numToHex = (num) => Number(num).toString(16)
 export const hexToNum = (hex) => parseInt(hex, 16)
 
 export const toPadedHex = (pad) => (value) => {
-  value = util.isString(value) ? util.hexToNum(value) : value
+  value = isString(value) ? hexToNum(value) : value
   value = Math.max(value, 0)
-  let hex =  util.numToHex(value).substr(0, pad)
+  let hex = numToHex(value).substr(0, pad)
   let zeros = new Array(pad - hex.length).fill(0).join('')
   return zeros + hex
 }

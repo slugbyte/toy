@@ -4,6 +4,10 @@ export const CAPACITY = 1024
 export const isValidAddress = util.inRange(0, CAPACITY)
 export const memory = new Array(CAPACITY).fill(0)
 
+export const clear = () => {
+  memory.fill(0)
+}
+
 export const load = (bytecode) => {
   for(var i=0; i<bytecode.length; i+=2){
     let hexByte = bytecode.substr(i, 2)

@@ -5,6 +5,8 @@ import * as memory from '../../lib/memory.js'
 import * as assembler from '../../lib/assembler.js'
 import * as dom from '../../lib/dom.js'
 
+import Editor from '../editor'
+import Memory from '../memory'
 import Registers from '../registers'
 
 class App extends React.Component {
@@ -22,7 +24,9 @@ class App extends React.Component {
   render(){
     return (
       <div className='app'>
+        <Editor />
         <Registers />
+        <Memory />
       </div>
     )
   }

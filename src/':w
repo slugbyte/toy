@@ -1,0 +1,11 @@
+class Editor extends React.Component {
+  render(){
+    return (
+      <p> 
+        helloworld
+      </p>
+    )
+  }
+}
+
+export default Editor

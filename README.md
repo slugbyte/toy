@@ -1,4 +1,4 @@
-``` asm
+``` s
 _main
   MOV fff B
   JMP _loop

@@ -7,11 +7,11 @@ export const subscribe = (callback) => {
   _subscribers.push(callback)
 }
 
-export const fps = ((() => {
-  let _fps = 100
+export const cps = ((() => {
+  let _cps = 100
   return  {
-    set: (num) => _fps = num,
-    get: () => _fps,
+    set: (num) => _cps = num,
+    get: () => _cps,
   }
 })())
 
@@ -20,7 +20,7 @@ export const tick = () => {
   setTimeout(() => {
     _subscribers.forEach(cb => cb())
     requestAnimationFrame(tick);
-  }, 1000 / fps.get())
+  }, 1000 / cps.get())
 }
 
 export const start = () => {

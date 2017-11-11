@@ -174,6 +174,6 @@ export const transform = (ast) => {
   return {ast, labels, bytecode, size}
 }
 
-export const compile = (program) => {
+export const assemble = (program) => {
   return transform(parser(tokenizer(program))).bytecode
 }

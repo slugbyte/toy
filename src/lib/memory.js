@@ -10,6 +10,14 @@ export const subscribe = (cb) => {
   subscribers.push(cb)
 }
 
+export const load = (bytecode) => {
+  for(var i=0; i<bytecode.length; i+=2){
+    let hexByte = bytecode.substr(i, 2)
+    let value = util.hexToNum(hexByte)
+    memory[i/2] = value
+  }
+}
+
 export const set = (value, index) => {
   index = util.isString(index) ? util.hexToNum(index) : index  
   value = util.isString(value) ? util.hexToNum(value) : value  

@@ -20,7 +20,6 @@ export const tokenizer = (program) => {
   .filter(token => token.type !== 'BLANK')
 }
 
-
 // tokens -> AST
 export const parser = (tokens) => {
   let wasJUMP = false
@@ -129,7 +128,7 @@ export const transform = (ast) => {
       case 'PIN':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'LABEL':
-        return `(${token.value})`
+        return `=${token.value}=`
     }
   }
 
@@ -161,10 +160,20 @@ export const transform = (ast) => {
   // program bytecode and size
   let bytecode = labels.map(l => l.bytecode).join('')
   let size = labels.reduce((r, l) => r + l.size, 0)
+
+  // replace lables with memory address
+  let pointerType = typeToByte('POINTER')
+
+  // replace labels with pointers
+  bytecode = labels.reduce((r, label) => {
+    let address = pointerType + util.toHexWord(label.offset)
+    console.log(label.label.value , label.offset, address)
+    return r.replace(new RegExp(`=${label.label.value}=`, 'g'), address)
+  }, bytecode)
+  
   return {ast, labels, bytecode, size}
 }
 
-
 export const compile = (program) => {
-  return parser(tokenizer(program))
+  return transform(parser(tokenizer(program))).bytecode
 }

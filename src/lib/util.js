@@ -36,19 +36,11 @@ export const del = (key) => (collection) => {
 }
 
 // math
-export const inRange = (min, max) => (value) => value > min && value < max
-export const inURange = (max) => inRange(-1, max)
+export const inRange = (min, max) => (value) => value >= min && value <= max
+export const isByte = inRange(0, 0xff)
+export const isWord = inRange(0, 0xffff)
 
 export const limit = (min, max, value) => Math.max(min, Math.min(max, value))
-
-export const in8 = inURange(8)
-export const in16 = inURange(16)
-export const in32 = inURange(32)
-export const in64 = inURange(64)
-export const in128 = inURange(128)
-export const in256 = inURange(256)
-export const in512 = inURange(512)
-export const in1024 = inURange(1024)
 
 export const add = (a) => (b) => b + a
 export const sub = (a) => (b) => b - a

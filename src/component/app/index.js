@@ -16,7 +16,8 @@ class App extends React.Component {
       B:0,
       C:0,
       D:0,
-      PC: 0,
+      P:0,
+      I:0,
       raw: [],
     }
   }
@@ -32,7 +33,8 @@ class App extends React.Component {
         B: cpu.REGISTERS.B,
         C: cpu.REGISTERS.C,
         D: cpu.REGISTERS.D,
-        PC: cpu.PC,
+        P: cpu.REGISTERS.P,
+        I: cpu.REGISTERS.I,
         raw: memory.memory.slice(0, 256).reduce((r, n, i) => {
           r += util.toHexByte(n) + ' '
           if(i === 255) return r
@@ -45,10 +47,11 @@ class App extends React.Component {
   }
 
   render(){
-    let {A, B, C, D, PC, raw} = this.state
+    let {A, B, C, D, P, I, raw} = this.state
     return (
       <div className='app'>
-        <p> [PC] dec: {PC} hex: x{util.toHexWord(PC)} </p>
+        <p> [P] dec: {P} hex: x{util.toHexWord(P)} </p>
+        <p> [I] dec: {I} hex: x{util.toHexWord(I)} </p>
         <p> [A] dec: {A} hex: x{util.toHexWord(A)} </p>
         <p> [B] dec: {B} hex: x{util.toHexWord(B)} </p>
         <p> [C] dec: {C} hex: x{util.toHexWord(C)} </p>

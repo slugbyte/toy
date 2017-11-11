@@ -44,20 +44,20 @@ export const cpuType = (SRC) => {
 export const toValue = (SRC) => {
   if(util.isNum(SRC)) return SRC
   if(isRegister(SRC)) return REGISTERS[SRC]
-  if(isPointer(SRC)) return memory.get(SRC.substr(1))
+  if(isPointer(SRC)) return memory.getByte(SRC.substr(1))
   if(isConstant(SRC)) return util.hexToNum(SRC)
   throw new Error('toValue error SRC unsuported')
 }
 
-// expects a number
 export const setRegister = (num, reg) => {
   REGISTERS[reg] = util.limit(0, 0xffff, num)
 }
 
+
 // INSTRUCTIONS
 export const MOV = (SRC, DST) => {
   if(isRegister(DST)) setRegister(toValue(SRC), DST)
-  if(isPointer(DST)) memory.set(toValue(SRC), DST.substr(1))
+  if(isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1))
 }
 
 export const ADD = (SRC, DST) => {
@@ -113,28 +113,30 @@ export const LOG = (SRC) => {
 }
 
 export const JMP = (DST) => {
-   REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST))
+  let to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+  REGISTERS.P = to
 }
 
 export const JEQ = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
   if(aVal === bVal)
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST))
+    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
 }
 
 export const JLT = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
   if(aVal < bVal)
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST))
+    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
 }
 
 export const JGT = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
-  if(aVal > bVal)
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST))
+  if(aVal > bVal){
+    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+  }
 }
 
 export const RANDW = (DST) => {
@@ -145,13 +147,44 @@ export const RANDB = (DST) => {
   MOV(util.rand(0xff), DST)
 }
 
-export const NOP = () => {}
+export const NOP = () => { }
 
 export const HALT = () => {
-  HALTED = false
+  HALTED = true
+}
+
+let ops = {
+  NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP, 
+  JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, 
 }
 
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
-// TODO: COMPLIER 
 // TODO: RUNTIME (clock)
+export const tick = () => {
+  if(HALTED) return 
+  let {P} = REGISTERS
+  let instructionByte = memory.getWord(P)
+  let next = ops[_INSTRUCTIONS[instructionByte]]
+  let argc = next.length
+  let args = []
+  P += 2
+  for(let i=0; i<argc; i++){
+    let type = _TYPES[memory.getByte(P++)]
+    let value
+    if(type === 'REGISTER'){
+      args.push(_REGISTERS[memory.getByte(P++)])
+    } else if (type === 'POINTER'){
+      args.push('x'+ util.toHexWord(memory.getWord(P)))
+      P += 2
+    } else if (type === 'CONSTANT'){
+      args.push(util.toHexWord(memory.getWord(P)))
+      P += 2
+    }
+  }
+  let size = P - REGISTERS.P
+  REGISTERS.P += size 
+  next(...args)
+
+  return {P, instructionByte, next, argc, args}
+}
 // TODO: IMPLMENT DEVICES (LCD, BUZZER, MEMORY_POKER)

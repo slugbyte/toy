@@ -1,7 +1,13 @@
-import ReactDom from 'react-dom'
+import './style/main.sass'
 
-import App from './component/app'
+import * as cpu from './lib/cpu.js'
+import * as memory from './lib/memory.js'
+import * as util from './lib/util.js'
+import * as compiler from './lib/compiler.js'
+import * as dom from './lib/dom.js'
 
-const container = document.createElement('div')
-document.body.append(container)
-ReactDom.render(<App />, container)
+window.cpu = cpu
+window.dom = dom
+window.util = util
+window.memory = memory
+window.compiler = compiler

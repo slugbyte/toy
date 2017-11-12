@@ -58,6 +58,7 @@ class Editor extends React.Component {
         <AceEditor 
           onChange={this.handleChange}
           value={this.state.text}
+          width='100%'
           />
       </div>
     )

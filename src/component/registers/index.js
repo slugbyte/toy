@@ -1,21 +1,18 @@
+import './_registers.sass'
 import * as cpu from '../../lib/cpu.js'
 
 class Registers extends React.Component {
   render(){
     return (
-      <div className='register'>
-        <table>
-          <tbody>
-            <tr>
-              {cpu._REGISTERS.map((name) => 
-                <th key={name}> {name} </th>)}
-            </tr>
-            <tr>
-              {cpu._REGISTERS.map((name, key) => 
-                <td key={name + key}> {cpu.REGISTERS[name]} </td>)}
-            </tr>
-          </tbody>
-        </table>
+      <div className='registers'>
+          <div className='register-names'>
+            {cpu._REGISTERS.map((name) => 
+              <div key={name}> {name} </div>)}
+          </div>
+          <div className='register-values'>
+            {cpu._REGISTERS.map((name, key) => 
+              <div key={name + key}> {cpu.REGISTERS[name]} </div>)}
+          </div>
       </div>
     )
   }

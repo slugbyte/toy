@@ -1,0 +1,31 @@
+@import 'vars'
+
+.clock 
+  background: yellow
+  .cps, .switch
+    float: left
+    height: 100%
+  .cps
+    width: 70%
+    font-size: 1.5em
+    text-align: center
+    padding: $pad / 2
+  .switch 
+    width: 30%
+    label
+      padding: $pad
+      width: 2.5em
+      height: 5em
+      background: #ff7a7a
+      div 
+        width: 80%
+        height: 1.5em
+        background: #444
+        transition: 200ms
+
+    input[type='checkbox']:checked + label
+      background: #7aff7a * 0.8
+      div 
+        transform: translateY(2.5em)
+    input
+      display: none

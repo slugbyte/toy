@@ -1,0 +1,28 @@
+@import 'vars'
+
+.app 
+  .terminal 
+    background: $beige
+    height: 250px
+  .editor
+    height: calc(100vh - 250px)
+  .machiene 
+    height: 100vh
+
+@media screen and (min-width: 700px)
+  .app 
+    .terminal 
+      float: right
+      height: 250px
+      width: 70%
+    .editor
+      float: right
+      height: calc(100vh - 250px)
+      width: 70%
+    .machiene 
+      position: fixed
+      top: 0
+      left: 0
+      height: 100vh
+      width: 30%
+

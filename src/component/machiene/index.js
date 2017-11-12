@@ -1,3 +1,4 @@
+import './_machiene.sass'
 import Clock from '../clock'
 import Memory from '../memory'
 import Registers from '../registers'

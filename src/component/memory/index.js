@@ -15,10 +15,8 @@ class Memory extends React.Component {
     let {P} = cpu.REGISTERS
     return (
       <div className='memory'>
-        <h1> memory </h1>
         {hexMemory.map((data , index) => 
           <div className='memory-item' key={data.address}>
-            <p> {index === P ?  'P' : 'X'} </p>
             <p className='address'> {data.address} </p>
             <p className='value'> {data.value} </p>
           </div>

@@ -4,16 +4,16 @@ import * as assembler from '../../lib/assembler.js'
 
 let program = `
 _main
-	MOV fff B
+    MOV fff B
     JMP _loop
 
 _loop
-  JGT A B _done
-  ADD 1 A
-  JMP _loop
+    JGT A B _done
+    ADD 1 A
+    JMP _loop
 	
 _done
-  HALT 
+    HALT 
 `
 
 
@@ -38,6 +38,7 @@ class Editor extends React.Component {
   }
 
   assemble = () => {
+    console.log('assemble')
     memory.clear()
     try {
       memory.load(assembler.assemble(this.state.text))

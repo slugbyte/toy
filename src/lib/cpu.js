@@ -7,7 +7,7 @@ import * as memory from './memory.js'
 export const WORD_SIZE = 2
 
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
-export const _REGISTERS = ['P', 'A', 'B', 'C', 'D', 'I']
+export const _REGISTERS = ['P', 'A', 'B', 'C', 'D']
 export const _TYPES = [
   'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
 ]

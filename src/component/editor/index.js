@@ -51,12 +51,14 @@ class Editor extends React.Component {
 
   render(){
     return (
-      <div className='editor'>
+      <div className='editor ace-chaos'>
         <header>
           <button onClick={this.assemble}> Assemble </button>
           <button onClick={this.clear}> Clear </button>
         </header>
         <AceEditor 
+        theme="github"
+          mode='java'
           onChange={this.handleChange}
           value={this.state.text}
           width='100%'

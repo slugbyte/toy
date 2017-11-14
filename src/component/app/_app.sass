@@ -1,0 +1,41 @@
+@import 'vars'
+
+html,body
+  background: beige
+
+.app 
+  .terminal 
+    background: $beige
+    height: 250px
+  .editor
+    height: 100%
+  .machiene 
+    height: 100vh
+    
+
+@media screen and (min-width: 700px)
+  html,body, .container
+    position: relative
+    height: 100% 
+    overflow: hidden
+  .app 
+    height: 100%
+    .editor
+      float: right
+      width: 70%
+      height: 100%
+    .machiene 
+      float: left
+      top: 0
+      left: 0
+      height: 100%
+      width: 30%
+
+@media screen and (min-width: 1281px)
+  body
+    padding: 1em
+  .app
+    width: 1280px
+    border: 1em solid black
+  
+    margin: 0 auto

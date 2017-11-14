@@ -1,0 +1,398 @@
+* {
+  position: static;
+  display: block;
+  height: auto;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1em;
+  outline: none;
+  border: none;
+}
+
+head,
+script,
+link {
+  display: none;
+}
+
+input:focus {
+  outline: none;
+  border: none;
+}
+
+body {
+  background: #000;
+  color: #777;
+}
+
+html,
+body {
+  background: beige;
+}
+
+.app .terminal {
+  background: beige;
+  height: 250px;
+}
+
+.app .editor {
+  height: 100%;
+}
+
+.app .machiene {
+  height: 100vh;
+}
+
+@media screen and (min-width: 700px) {
+  html,
+  body,
+  .container {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app {
+    height: 100%;
+  }
+
+  .app .editor {
+    float: right;
+    width: 70%;
+    height: 100%;
+  }
+
+  .app .machiene {
+    float: left;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 30%;
+  }
+}
+
+@media screen and (min-width: 1281px) {
+  body {
+    padding: 1em;
+  }
+
+  .app {
+    width: 1280px;
+    border: 1em solid black;
+    margin: 0 auto;
+  }
+}
+
+.editor .ace_gutter {
+  background: #222 !important;
+  color: #bebebe !important;
+}
+
+.editor .ace_content {
+  background: #444  !important;
+  color: #eee !important;
+}
+
+.editor .ace_gutter-active-line {
+  background: #000 !important;
+}
+
+.machiene .clock,
+.machiene .registers {
+  float: left;
+  height: 5em;
+}
+
+.machiene .clock {
+  width: 100%;
+}
+
+.machiene .pins {
+  height: 6em;
+}
+
+.machiene .registers {
+  width: 100%;
+}
+
+.chat input {
+  border-top: 5px solid olive;
+  border-left: 5px solid olive;
+  border-bottom: 5px solid olive;
+  border-right: 5px solid olive;
+  padding: .5em;
+  background: #cccc00;
+  color: #444;
+}
+
+.pins .switches {
+  background: #a38896;
+  width: 100%;
+  height: 100%;
+}
+
+.pins .switches .switch {
+  background: black;
+  float: left;
+  width: calc(100% / 20 - .5em);
+  height: calc(100% / 5 - .5em);
+  margin: .25em;
+}
+
+.pins .switches .switch-on {
+  background: #0ff;
+}
+
+.clock button {
+  float: left;
+  width: 60%;
+  height: 50%;
+}
+
+.clock .run,
+.clock .reset,
+.clock .debug,
+.clock .pause,
+.clock .tick,
+.clock .clear {
+  width: 25%;
+}
+
+.clock .debug {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #f76792;
+}
+
+.clock .debug:hover {
+  background: #c65275;
+}
+
+.clock .debug:active {
+  background: #943e58;
+}
+
+.clock .debug-on {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #4be586;
+}
+
+.clock .debug-on:hover {
+  background: #3cb76b;
+}
+
+.clock .debug-on:active {
+  background: #2d8950;
+}
+
+.clock .pause {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #eae04d;
+}
+
+.clock .pause:hover {
+  background: #bbb33e;
+}
+
+.clock .pause:active {
+  background: #8c862e;
+}
+
+.clock .run {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #54baff;
+}
+
+.clock .run:hover {
+  background: #4395cc;
+}
+
+.clock .run:active {
+  background: #327099;
+}
+
+.clock .reset {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #b57cdd;
+}
+
+.clock .reset:hover {
+  background: #9163b1;
+}
+
+.clock .reset:active {
+  background: #6d4a85;
+}
+
+.clock .tick {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #4be586;
+}
+
+.clock .tick:hover {
+  background: #3cb76b;
+}
+
+.clock .tick:active {
+  background: #2d8950;
+}
+
+.clock .clear {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #bac;
+}
+
+.clock .clear:hover {
+  background: #9688a3;
+}
+
+.clock .clear:active {
+  background: #70667a;
+}
+
+.clock .assemble {
+  border-top: 5px solid white;
+  border-left: 5px solid white;
+  border-bottom: 5px solid #444;
+  border-right: 5px solid #444;
+  background: #cbaabc;
+  width: 50%;
+}
+
+.clock .assemble:hover {
+  background: #a28896;
+}
+
+.clock .assemble:active {
+  background: #7a6671;
+}
+
+.memory {
+  width: 100%;
+  height: 100%;
+  background: #333300;
+  overflow: scroll;
+}
+
+.memory .memory-item {
+  font-family: monospace;
+  text-align: center;
+  position: relative;
+  background: black;
+  width: calc( 100% / 8);
+  float: left;
+  font-size: 1.25em;
+  padding: .5em;
+}
+
+.memory .memory-item:nth-child(8n) .address,
+.memory .memory-item:nth-child(8n-1) .address {
+  right: 2.8em !important;
+}
+
+.memory .memory-item .address {
+  padding: .5em;
+  position: absolute;
+  display: none;
+  z-index: 100;
+}
+
+.memory .memory-item:hover {
+  background: #fff;
+}
+
+.memory .memory-item:hover .address {
+  display: inline-block;
+  background: #fff;
+  color: black;
+  width: auto;
+  top: 0;
+  right: -4.1em;
+}
+
+.memory .memory-item:hover .address:hover {
+  display: none;
+}
+
+.program-counter {
+  background: #0f0 !important;
+}
+
+.registers {
+  background: orange;
+}
+
+.registers .register-names,
+.registers .register-values {
+  height: 50%;
+  padding: .5em;
+  padding-right: 0;
+  font-family: monospace;
+  font-size: 1.25em;
+}
+
+.registers .register-names div,
+.registers .register-values div {
+  border-top: 5px solid #444;
+  border-left: 5px solid #444;
+  border-bottom: 5px solid #fff;
+  border-right: 5px solid #fff;
+  border-width: 2px;
+  font-weight: bolder;
+  width: calc(100% / 5 - 0.5em);
+  margin-right: .5em;
+  height: 100%;
+  float: left;
+  padding: .15em;
+  text-align: center;
+  background: #444;
+  color: #000;
+}
+
+.registers .register-names {
+  background: yellow;
+  padding-bottom: 0.25em;
+}
+
+.registers .register-names div {
+  background: orange;
+}
+
+.registers .register-values {
+  font-size: 1em;
+  background: yellow;
+  padding-top: 0.25em;
+}
+
+.registers .register-values div {
+  background: #999900;
+  color: #000;
+}
+
+
+/*# sourceMappingURL=bundle.21539929316dee503032.css.map*/

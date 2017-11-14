@@ -26,7 +26,9 @@ export const prepend = (data) => (collection) => [data, ...collection]
 
 // maps
 export const get = (key) => (collection) => collection[key]
-export const set = (key, value) => (collection) => {...collection, [key]:value}
+
+export const set = (key, value) => (collection) => ({...collection, [key]:value})
+
 export const del = (key) => (collection) => {
   let result = {...collection}
   delete result[key]
@@ -34,17 +36,11 @@ export const del = (key) => (collection) => {
 }
 
 // math
-export const inRange = (min, max) => (value) => value > min && value < max
-export const inURange = (max) => inRange(-1, max)
+export const inRange = (min, max) => (value) => value >= min && value <= max
+export const isByte = inRange(0, 0xff)
+export const isWord = inRange(0, 0xffff)
 
-export const in8 = inURange(8)
-export const in16 = inURange(16)
-export const in32 = inURange(32)
-export const in64 = inURange(64)
-export const in128 = inURange(128)
-export const in256 = inURange(256)
-export const in512 = inURange(512)
-export const in1024 = inURange(1024)
+export const limit = (min, max, value) => Math.max(min, Math.min(max, value))
 
 export const add = (a) => (b) => b + a
 export const sub = (a) => (b) => b - a
@@ -61,15 +57,18 @@ export const eq = (a) => (b) => b === a
 export const lt = (a) => (b) => b < a
 export const gt = (a) => (b) => b > a
 
-export const numToHex  = (num) => Number(num).toString(16) 
+export const numToHex = (num) => Number(num).toString(16) 
 export const hexToNum = (hex) => parseInt(hex, 16)
 
+export const toPadedHex = (pad) => (value) => {
+  value = isString(value) ? hexToNum(value) : value
+  value = Math.max(value, 0)
+  let hex = numToHex(value).substr(0, pad)
+  let zeros = new Array(pad - hex.length).fill(0).join('')
+  return zeros + hex
+}
+
+export const toHexByte = toPadedHex(2)
+export const toHexWord = toPadedHex(4)
+
 export const rand = (max) => Math.floor(Math.random() * max)
-export const rand8 = () => rand(8)
-export const rand16 = () => rand(16)
-export const rand32 = () => rand(32)
-export const rand64 = () => rand(64)
-export const rand128 = () => rand(128)
-export const rand256 = () => rand(256)
-export const rand512 = () => rand(512)
-export const rand1024 = () => rand(1024)

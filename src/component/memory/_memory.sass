@@ -1,0 +1,36 @@
+.memory 
+  width: 100%
+  height: 100%
+  background: yellow * 0.2
+  overflow: scroll
+  .memory-item
+    font-family: monospace
+    text-align: center
+    position: relative
+    background: black
+    width: calc( 100% / 8)
+    float: left
+    font-size: 1.25em
+    padding: .5em
+    &:nth-child(8n), &:nth-child(8n-1) 
+      .address
+        right: 2.8em !important
+    .address
+      padding: .5em
+      position: absolute
+      display: none;
+      z-index: 100
+    &:hover
+      background: #fff
+      .address
+        display: inline-block;
+        background: #fff
+        color: black;
+        width: auto
+        top: 0
+        right: -4.1em
+        &:hover 
+          display: none
+
+.program-counter
+  background: #0f0 !important

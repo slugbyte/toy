@@ -1,4 +1,4 @@
-// memory 
+// memory
 // 0x0 programCounter
 import * as util from './util.js'
 import * as clock from './clock.js'
@@ -8,23 +8,29 @@ import * as memory from './memory.js'
 export const WORD_SIZE = 2
 
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
-export const _REGISTERS = ['P', 'A', 'B', 'C', 'D']
+// Z - "ebp" pointer to bottom of stack
+// S - "esp" pointer to top of stack
+export const _REGISTERS = ['P', 'A', 'B', 'C', 'D', 'Z', 'S']
 export const _TYPES = [
   'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
 ]
 
-export const _INSTRUCTIONS = [ 
-  'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 
+export const _INSTRUCTIONS = [
+  'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP',
   'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT',
-] 
+  'CALL', 'RET',
+]
 
 // STATE
-export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , P: 0 }
+export const REGISTERS = {
+  A: 0, B: 0, C: 0, D: 0, P: 0,
+  Z: memory.CAPACITY, S: memory.CAPACITY
+}
 export const PINS = new Array(100).fill(0)
 export const subscribers =  []
 export const pinSubscribers = []
 export let HALTED = (() => {
-  let state = true 
+  let state = true
   return {
     setTrue: () => state = true,
     setFalse: () => state = false,
@@ -88,7 +94,7 @@ export const setPinOff = (index) => {
   pinSubscribers.forEach(cb => cb())
 }
 
-export const togglePin = (index) => { 
+export const togglePin = (index) => {
   PINS[index] = !!PINS[index] ? 0 : 1
   pinSubscribers.forEach(cb => cb())
 }
@@ -152,7 +158,7 @@ export const AND = (SRC, DST) => {
 }
 
 export const OR = (SRC, DST) => {
-  let sVal = toValue(SRC) 
+  let sVal = toValue(SRC)
   let dVal = toValue(DST)
   MOV(dVal | sVal, DST)
 }
@@ -164,7 +170,7 @@ export const XOR = (SRC, DST) => {
 }
 
 export const LOG = (SRC) => {
-  console.log(`${cpuType(SRC)} (${SRC}): ${toValue(SRC)}`) 
+  console.log(`${cpuType(SRC)} (${SRC}): ${toValue(SRC)}`)
 }
 
 export const JMP = (DST) => {
@@ -173,26 +179,34 @@ export const JMP = (DST) => {
 }
 
 export const JEQ = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal === bVal)
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JLT = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal < bVal)
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JGT = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal > bVal){
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
   }
 }
+
+export const CALL = (DST) => {
+  let to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+  // push to to stack
+  setProgramCounter(to)
+}
+
+export const RET = () => { }
 
 export const RANDW = (DST) => {
   MOV(util.rand(0xffff), DST)
@@ -219,8 +233,9 @@ export const HALT = () => {
 }
 
 let ops = {
-  NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP, 
+  NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP,
   JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, OUT,
+  CALL, RET,
 }
 
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
@@ -269,7 +284,7 @@ export const run = () => {
 
 clock.subscribe(() => {
   try {
-    if(HALTED.get()) return 
+    if(HALTED.get()) return
     tick()
   } catch(err) {
     util.error('__CPU_ERROR__', err)

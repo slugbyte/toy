@@ -1,4 +1,4 @@
-// parse line into 
+// parse line into
 
 import * as cpu from './cpu.js'
 import * as util from './util.js'
@@ -53,7 +53,7 @@ export const tokenizer = (program) => {
 export const parser = (tokens) => {
   let wasJUMP = false
   let isJUMP = (token) => {
-    if (['JMP', 'JLT', 'JEQ', 'JGT'].includes(token.value)) {
+    if (['JMP', 'JLT', 'JEQ', 'JGT', 'CALL'].includes(token.value)) {
       wasJUMP = true
       return wasJUMP
     } else {
@@ -108,7 +108,7 @@ export const parser = (tokens) => {
         })
         break;
       //ARGUMENTS
-      default: 
+      default:
         if(!label.body)
           throw new Bug({
             token,
@@ -139,7 +139,7 @@ export const parser = (tokens) => {
 export const transform = (ast) => {
   // compile program
   //   compile label
-  //     compile instruction 
+  //     compile instruction
   //     compile argument
   //     compute label pointers
   let typeToByte = (type) => util.toHexByte(cpu._TYPES.indexOf(type))
@@ -179,7 +179,7 @@ export const transform = (ast) => {
 
     // label bytecode and size
     let bytecode = instructions.map(c => c.bytecode).join('')
-    let offset = lastSize 
+    let offset = lastSize
     let size = instructions.reduce((r, i) => r + i.size, 0)
     lastSize += size
     return {label, instructions, bytecode, size, offset}

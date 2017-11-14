@@ -7,30 +7,28 @@ import * as memory from './memory.js'
 // state
 export let _program = {}
 export let _error = ''
-export let _text = `
-_main
-    MOV 63 B
-    JMP _loop
+export let _text = `_main
+    OUT 1 0
+    JMP _on
 
 _loop
-    JGT A B _done
+    JGT A 64 _flip
+    OUT x80 A
     ADD 1 A
-    MOV A C
-    MOD 2 C 
-    JEQ 0 C _fizz
-    JMP _buzz
-    
-_fizz
-    MOV ff D
     JMP _loop
 
-_buzz
-    MOV bb D
+_flip
+    MOV 0 A
+    JGT x80 0 _off
+    JMP _on
+
+_on
+    MOV 1 x80
     JMP _loop
-	
-_done
-    HALT
-`.trim()
+    
+_off
+    MOV 0 x80
+    JMP _loop`
 
 
 class Bug extends Error {

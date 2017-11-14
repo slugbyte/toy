@@ -21,7 +21,6 @@ export const _INSTRUCTIONS = [
 // STATE
 export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , P: 0 }
 export const PINS = new Array(100).fill(0)
-PINS[0] = 1
 export const subscribers =  []
 export const pinSubscribers = []
 export let HALTED = (() => {
@@ -33,8 +32,6 @@ export let HALTED = (() => {
     get: () => state
   }
 })()
-
-
 
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
@@ -76,18 +73,23 @@ export const setProgramCounter = (num) => {
   }
 }
 
+export const setPin = (value, index) => {
+  PINS[index] = value ? 1 : 0
+  pinSubscribers.forEach(cb => cb())
+}
+
 export const setPinOn = () => {
-  PINS[num] = 1
+  PINS[index] = 1
   pinSubscribers.forEach(cb => cb())
 }
 
-export const setPinOff = (num) => {
-  PINS[num] = 0
+export const setPinOff = (index) => {
+  PINS[index] = 0
   pinSubscribers.forEach(cb => cb())
 }
 
-export const togglePin = (num) => { 
-  PINS[num] = !!PINS[num] ? 0 : 1
+export const togglePin = (index) => { 
+  PINS[index] = !!PINS[index] ? 0 : 1
   pinSubscribers.forEach(cb => cb())
 }
 
@@ -202,13 +204,23 @@ export const RANDB = (DST) => {
 
 export const NOP = () => { }
 
+export const OUT = (SRC, DST) => {
+  setPin(toValue(SRC), util.limit(0, PINS.length -1, toValue(DST)))
+}
+
+export const IN = (SRC, DST) => {
+  let index = util.limit(0, PINS.length -1, toValue(SRC))
+  let value = PINS[index]
+  MOV(value, DST)
+}
+
 export const HALT = () => {
   HALTED.setTrue()
 }
 
 let ops = {
   NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP, 
-  JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, 
+  JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, OUT,
 }
 
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
@@ -242,9 +254,12 @@ export const tick = () => {
 
 export const reset = () => {
   _REGISTERS.forEach(name => {
-    setRegister(0, name)
+    REGISTERS[name] = 0
   })
+  PINS.fill(0)
   HALTED.setTrue()
+  subscribers.forEach(cb => cb())
+  pinSubscribers.forEach(cb => cb())
 }
 
 export const run = () => {

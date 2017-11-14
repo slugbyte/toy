@@ -24,7 +24,7 @@ class Clock extends React.PureComponent {
           })}> DEBUG </button>  
         <button onClick={cpu.tick} className='tick'> &gt; </button>
         <button onClick={cpu.reset} className='reset'> RESET  </button>
-        <button onClick={memory.clear} className='clear'> CLEAR </button>
+        <button onClick={memory.clear} className='clear'> FORMAT </button>
         <button onClick={assembler.build} className='assemble'> ASSEMBLE </button>
       </div>
     )

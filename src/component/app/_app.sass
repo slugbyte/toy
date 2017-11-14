@@ -5,24 +5,26 @@
     background: $beige
     height: 250px
   .editor
-    height: calc(100vh - 250px)
+    height: 100%
   .machiene 
     height: 100vh
+    
 
 @media screen and (min-width: 700px)
+  html,body, .container
+    position: relative
+    height: 100% 
+    overflow: hidden
   .app 
-    .terminal 
-      float: right
-      height: 250px
-      width: 70%
+    height: 100%
     .editor
       float: right
-      height: calc(100vh - 250px)
       width: 70%
+      height: 100%
     .machiene 
-      position: fixed
+      float: left
       top: 0
       left: 0
-      height: 100vh
+      height: 100%
       width: 30%
 

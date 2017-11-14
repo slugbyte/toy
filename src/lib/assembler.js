@@ -2,6 +2,36 @@
 
 import * as cpu from './cpu.js'
 import * as util from './util.js'
+import * as memory from './memory.js'
+
+// state
+export let _program = {}
+export let _error = ''
+export let _text = `
+_main
+    MOV 63 B
+    JMP _loop
+
+_loop
+    JGT A B _done
+    ADD 1 A
+    MOV A C
+    MOD 2 C 
+    JEQ 0 C _fizz
+    JMP _buzz
+    
+_fizz
+    MOV ff D
+    JMP _loop
+
+_buzz
+    MOV bb D
+    JMP _loop
+	
+_done
+    HALT
+`.trim()
+
 
 class Bug extends Error {
   constructor({index, token, message}){
@@ -175,5 +205,23 @@ export const transform = (ast) => {
 }
 
 export const assemble = (program) => {
-  return transform(parser(tokenizer(program))).bytecode
+  return transform(parser(tokenizer(program)))
+}
+
+
+export const setProgram = (text) => {
+  _text = text
+}
+
+export const build = () => {
+  try {
+    _program = assemble(_text)
+    _error = ''
+    cpu.reset()
+    memory.clear()
+    memory.load(_program.bytecode)
+  } catch (err) {
+    console.error('__BUILD_ERROR__', err)
+    _error = err.message
+  }
 }

@@ -9,7 +9,7 @@ export let _program = {}
 export let _error = ''
 export let _text = `_main
     OUT 1 0
-    JMP _on
+    CALL _on
 
 _loop
     JGT A 64 _flip

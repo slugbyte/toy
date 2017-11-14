@@ -41,7 +41,7 @@ export let HALTED = (() => {
 
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
-export const isRegister = (value) => new RegExp('^[A-D]$').test(value)
+export const isRegister = (value) => new RegExp('^[A-DSZ]$').test(value)
 export const isConstant = (value) => new RegExp('^[a-f0-9]{1,4}$').test(value)
 export const isPointer = (value) => new RegExp('^x[a-f0-9]{1,4}$').test(value)
 export const isPin = (value) => new RegExp('^#[a-f0-9]{1,4}$').test(value)
@@ -201,8 +201,12 @@ export const JGT = (SRCA, SRCB, DST) => {
 }
 
 export const CALL = (DST) => {
+  // push current program counter to stack
+  let returnAddress = REGISTERS.P + 5
+  REGISTERS.S -= 2;
+  memory.setByte(returnAddress, REGISTERS.S);
+  
   let to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
-  // push to to stack
   setProgramCounter(to)
 }
 
@@ -271,6 +275,11 @@ export const reset = () => {
   _REGISTERS.forEach(name => {
     REGISTERS[name] = 0
   })
+  
+  // point the stack to the end of memory
+  REGISTERS.Z = memory.CAPACITY
+  REGISTERS.S = memory.CAPACITY
+  
   PINS.fill(0)
   HALTED.setTrue()
   subscribers.forEach(cb => cb())

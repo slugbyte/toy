@@ -1,3 +1,4 @@
+import './_editor.sass'
 import AceEditor from 'react-ace'
 import * as cpu from '../../lib/cpu.js'
 import * as memory from '../../lib/memory.js'
@@ -31,7 +32,7 @@ class Editor extends React.Component {
 
   render(){
     return (
-      <div className='editor ace-chaos'>
+      <div className='editor'>
         <AceEditor 
         theme="github"
           mode='java'
@@ -39,6 +40,9 @@ class Editor extends React.Component {
           value={this.state.text}
           width='100%'
           height='100%'
+          setOptions={{
+            showPrintMargin: false,
+          }}
           />
       </div>
     )

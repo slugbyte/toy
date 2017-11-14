@@ -21,7 +21,9 @@ export const _INSTRUCTIONS = [
 // STATE
 export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , P: 0 }
 export const PINS = new Array(100).fill(0)
+PINS[0] = 1
 export const subscribers =  []
+export const pinSubscribers = []
 export let HALTED = (() => {
   let state = true 
   return {
@@ -74,6 +76,21 @@ export const setProgramCounter = (num) => {
   }
 }
 
+export const setPinOn = () => {
+  PINS[num] = 1
+  pinSubscribers.forEach(cb => cb())
+}
+
+export const setPinOff = (num) => {
+  PINS[num] = 0
+  pinSubscribers.forEach(cb => cb())
+}
+
+export const togglePin = (num) => { 
+  PINS[num] = !!PINS[num] ? 0 : 1
+  pinSubscribers.forEach(cb => cb())
+}
+
 export const incProgramCounter = (num=1) => {
   REGISTERS.P = util.limit(0, memory.CAPACITY, REGISTERS.P + num)
   if(clock._debug.get()){
@@ -83,6 +100,10 @@ export const incProgramCounter = (num=1) => {
 
 export const subscribe = (cb) => {
   subscribers.push(cb)
+}
+
+export const pinSubscribe = (cb) => {
+  pinSubscribers.push(cb)
 }
 
 

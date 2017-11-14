@@ -1,5 +1,8 @@
 @import 'vars'
 
+html,body
+  background: beige
+
 .app 
   .terminal 
     background: $beige
@@ -28,3 +31,11 @@
       height: 100%
       width: 30%
 
+@media screen and (min-width: 1281px)
+  body
+    padding: 1em
+  .app
+    width: 1280px
+    border: 1em solid black
+  
+    margin: 0 auto

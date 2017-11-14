@@ -1,6 +1,7 @@
 // parse line into 
 
 import * as cpu from './cpu.js'
+import * as util from './util.js'
 
 class Bug extends Error {
   constructor({index, token, message}){
@@ -25,7 +26,6 @@ export const parser = (tokens) => {
   let wasJUMP = false
   let isJUMP = (token) => {
     if (['JMP', 'JLT', 'JEQ', 'JGT'].includes(token.value)) {
-      console.log('jump')
       wasJUMP = true
       return wasJUMP
     } else {
@@ -167,7 +167,7 @@ export const transform = (ast) => {
   // replace labels with pointers
   bytecode = labels.reduce((r, label) => {
     let address = pointerType + util.toHexWord(label.offset)
-    console.log(label.label.value , label.offset, address)
+    //console.log(label.label.value , label.offset, address)
     return r.replace(new RegExp(`=${label.label.value}=`, 'g'), address)
   }, bytecode)
   

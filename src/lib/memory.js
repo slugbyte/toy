@@ -3,9 +3,15 @@ import * as util from './util.js'
 export const CAPACITY = 1024
 export const isValidAddress = util.inRange(0, CAPACITY)
 export const memory = new Array(CAPACITY).fill(0)
+export const subscribers = []
+
+export const subscribe = (cb) => {
+  subscribers.push(cb)
+}
 
 export const clear = () => {
   memory.fill(0)
+  subscribers.forEach(cb => cb())
 }
 
 export const load = (bytecode) => {
@@ -14,6 +20,7 @@ export const load = (bytecode) => {
     let value = util.hexToNum(hexByte)
     memory[i/2] = value
   }
+  subscribers.forEach(cb => cb())
 }
 
 export const setByte = (value, index) => {
@@ -23,6 +30,7 @@ export const setByte = (value, index) => {
     memory[index] = value
   else 
     throw new Error(`index ${index} or value ${value} out of range`)
+  subscribers.forEach(cb => cb())
   return memory
 }
 
@@ -40,8 +48,10 @@ export const setWord = (value, index) => {
   if(isValidAddress(index) && util.isWord(value)){
     memory[index] = value >> 8 & 0xff 
     memory[index + 1]  = value & 0xff
-  } else 
+  } else {
     throw new Error(`index ${index} or value ${value} out of range`)
+  }
+  subscribers.forEach(cb => cb())
 }
 
 export const getWord = (index) => {

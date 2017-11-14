@@ -1,3 +1,5 @@
+@import 'mixins'
+
 .registers 
   background: orange
   .register-names, .register-values
@@ -7,12 +9,14 @@
     font-family: monospace
     font-size: 1.25em
     div
+      @include retro-border(#444, #fff)
+      border-width: 2px
       font-weight: bolder
       width: calc(100% / 5 - 0.5em )
       margin-right: .5em
       height: 100%
       float: left
-      padding: .35em
+      padding: .15em
       text-align: center
       background: #444
       color: #000

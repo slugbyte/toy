@@ -2,6 +2,14 @@ import './_registers.sass'
 import * as cpu from '../../lib/cpu.js'
 
 class Registers extends React.Component {
+  shouldComponentUpdate(){
+    return false
+  }
+
+  componentWillMount(){
+    cpu.subscribe(this.forceUpdate.bind(this))
+  }
+
   render(){
     return (
       <div className='registers'>

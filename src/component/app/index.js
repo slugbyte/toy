@@ -6,14 +6,10 @@ import Machiene from '../machiene'
 
 class App extends React.Component {
   // re-render the app on each clock cycle
-  componentWillMount(){
-    clock.subscribe(() => this.forceUpdate())
-  }
-
+  shouldComponentUpdate() {return false}
   render(){
     return (
       <div className='app'>
-        <Terminal />
         <Editor />
         <Machiene />
       </div>

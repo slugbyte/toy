@@ -1,6 +1,7 @@
 // memory 
 // 0x0 programCounter
 import * as util from './util.js'
+import * as clock from './clock.js'
 import * as memory from './memory.js'
 
 // CONSTANTS
@@ -11,15 +12,27 @@ export const _REGISTERS = ['P', 'A', 'B', 'C', 'D']
 export const _TYPES = [
   'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
 ]
+
 export const _INSTRUCTIONS = [ 
   'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 
   'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT',
 ] 
 
 // STATE
-export let HALTED = false
-export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , I: 0, P: 0 }
+export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , P: 0 }
 export const PINS = new Array(100).fill(0)
+export const subscribers =  []
+export let HALTED = (() => {
+  let state = true 
+  return {
+    setTrue: () => state = true,
+    setFalse: () => state = false,
+    toggle: () => state = !state,
+    get: () => state
+  }
+})()
+
+
 
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
@@ -51,6 +64,25 @@ export const toValue = (SRC) => {
 
 export const setRegister = (num, reg) => {
   REGISTERS[reg] = util.limit(0, 0xffff, num)
+  subscribers.forEach(cb => cb())
+}
+
+export const setProgramCounter = (num) => {
+  REGISTERS.P = util.limit(0, memory.CAPACITY, num)
+  if(clock._debug.get()){
+    subscribers.forEach(cb => cb())
+  }
+}
+
+export const incProgramCounter = (num=1) => {
+  REGISTERS.P = util.limit(0, memory.CAPACITY, REGISTERS.P + num)
+  if(clock._debug.get()){
+    subscribers.forEach(cb => cb())
+  }
+}
+
+export const subscribe = (cb) => {
+  subscribers.push(cb)
 }
 
 
@@ -114,28 +146,28 @@ export const LOG = (SRC) => {
 
 export const JMP = (DST) => {
   let to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
-  REGISTERS.P = to
+  setProgramCounter(to)
 }
 
 export const JEQ = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
   if(aVal === bVal)
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+    setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JLT = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
   if(aVal < bVal)
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+    setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JGT = (SRCA, SRCB, DST) => {
   let aVal = toValue(SRCA) 
   let bVal = toValue(SRCB) 
   if(aVal > bVal){
-    REGISTERS.P = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+    setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
   }
 }
 
@@ -150,7 +182,7 @@ export const RANDB = (DST) => {
 export const NOP = () => { }
 
 export const HALT = () => {
-  HALTED = true
+  HALTED.setTrue()
 }
 
 let ops = {
@@ -161,30 +193,49 @@ let ops = {
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
 // TODO: RUNTIME (clock)
 export const tick = () => {
-  if(HALTED) return 
-  let {P} = REGISTERS
-  let instructionByte = memory.getWord(P)
+  let instructionByte = memory.getWord(REGISTERS.P)
   let next = ops[_INSTRUCTIONS[instructionByte]]
   let argc = next.length
   let args = []
-  P += 2
+  incProgramCounter(2)
   for(let i=0; i<argc; i++){
-    let type = _TYPES[memory.getByte(P++)]
+    let type = _TYPES[memory.getByte(REGISTERS.P)]
     let value
+    incProgramCounter()
     if(type === 'REGISTER'){
-      args.push(_REGISTERS[memory.getByte(P++)])
+      args.push(_REGISTERS[memory.getByte(REGISTERS.P)])
+      incProgramCounter()
     } else if (type === 'POINTER'){
-      args.push('x'+ util.toHexWord(memory.getWord(P)))
-      P += 2
+      args.push('x'+ util.toHexWord(memory.getWord(REGISTERS.P)))
+      incProgramCounter(2)
     } else if (type === 'CONSTANT'){
-      args.push(util.toHexWord(memory.getWord(P)))
-      P += 2
+      args.push(util.toHexWord(memory.getWord(REGISTERS.P)))
+      incProgramCounter(2)
     }
   }
-  let size = P - REGISTERS.P
-  REGISTERS.P += size 
+
   next(...args)
 
-  return {P, instructionByte, next, argc, args}
+  return {P: REGISTERS.P, instructionByte, next, argc, args}
 }
-// TODO: IMPLMENT DEVICES (LCD, BUZZER, MEMORY_POKER)
+
+export const reset = () => {
+  _REGISTERS.forEach(name => {
+    setRegister(0, name)
+  })
+  HALTED.setTrue()
+}
+
+export const run = () => {
+  reset()
+  HALTED.setFalse()
+}
+
+clock.subscribe(() => {
+  try {
+    if(HALTED.get()) return 
+    tick()
+  } catch(err) {
+    util.error('__CPU_ERROR__', err)
+  }
+})

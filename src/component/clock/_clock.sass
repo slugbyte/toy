@@ -1,31 +1,45 @@
 @import 'vars'
+@import 'mixins'
+
+$theblue: #54baff
+$thepink: #f76792
+
+@mixin retro-button($color: red)
+  @include retro-border
+  background: $color
+  &:hover
+    background: $color * .8
+  &:active
+    background: $color * .6
 
 .clock 
-  background: yellow
-  .cps, .switch
+  button
     float: left
-    height: 100%
-  .cps
-    width: 70%
-    font-size: 1.5em
-    text-align: center
-    padding: $pad / 2
-  .switch 
-    width: 30%
-    label
-      padding: $pad
-      width: 2.5em
-      height: 5em
-      background: #ff7a7a
-      div 
-        width: 80%
-        height: 1.5em
-        background: #444
-        transition: 200ms
+    width: 60%
+    height: 50%
 
-    input[type='checkbox']:checked + label
-      background: #7aff7a * 0.8
-      div 
-        transform: translateY(2.5em)
-    input
-      display: none
+  .run, .reset, .debug, .pause, .tick, .clear
+    width: 25%
+
+  .debug
+    @include retro-button($thepink)
+
+  .debug-on
+    @include retro-button(#0f0)
+
+  .pause
+    @include retro-button(#eae04d)
+
+  .run 
+    @include retro-button($theblue)
+
+  .reset
+    @include retro-button(#b57cdd)
+
+  .tick
+    @include retro-button(#4be586)
+
+  .clear
+    @include retro-button(#bac)
+
+    

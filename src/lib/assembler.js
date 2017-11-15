@@ -16,6 +16,7 @@ _loop
     JGT A 64 _flip
     OUT x80 A
     ADD 1 A
+    PUSH 69
     JMP _loop
     
 _flip

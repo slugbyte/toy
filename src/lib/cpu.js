@@ -19,7 +19,7 @@ export const _TYPES = [
 export const _INSTRUCTIONS = [
   'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP',
   'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT',
-  'CALL', 'RET',
+  'CALL', 'RET', 'PUSH', 'POP'
 ]
 
 // STATE
@@ -224,6 +224,26 @@ export const RET = () => {
   REGISTERS.S += 2;
 }
 
+// push the value at the SRC into the memory location stored in the
+// stack pointer
+export const PUSH = (SRC) => {
+  let val = undefined;
+  if(isDereference(SRC)) {
+    // chop "*" off "*A"
+    SRC = SRC.substr(1);
+    let val = memory.getByte(toValue(SRC))
+  } else {
+    val = toValue(SRC)
+  }
+  REGISTERS.S -= 2
+  memory.setByte(val, REGISTERS.S)
+}
+
+export const POP = (DST) => {
+  MOV("*S", DST);
+  REGISTERS.S += 2
+}
+
 export const RANDW = (DST) => {
   MOV(util.rand(0xffff), DST)
 }
@@ -251,7 +271,7 @@ export const HALT = () => {
 let ops = {
   NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP,
   JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, OUT,
-  CALL, RET,
+  CALL, RET, PUSH, POP
 }
 
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT

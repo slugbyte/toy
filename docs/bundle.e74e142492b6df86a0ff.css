@@ -35,6 +35,10 @@ body {
   background: beige;
 }
 
+.app {
+  background: #000;
+}
+
 .app .terminal {
   background: beige;
   height: 250px;
@@ -292,6 +296,35 @@ body {
   background: #7a6671;
 }
 
+.instruction {
+  background: #69f461 !important;
+}
+
+.constant {
+  background: #70bae5 !important;
+}
+
+.register {
+  background: #f4c869 !important;
+}
+
+.pointer {
+  background: #6190f4 !important;
+}
+
+.dereference {
+  background: #f28448 !important;
+}
+
+.label {
+  background: #f489f3 !important;
+}
+
+.program-counter {
+  background: #fff !important;
+  color: #000;
+}
+
 .memory {
   width: 100%;
   height: 100%;
@@ -310,12 +343,7 @@ body {
   padding: .5em;
 }
 
-.memory .memory-item:nth-child(8n) .address,
-.memory .memory-item:nth-child(8n-1) .address {
-  right: 2.8em !important;
-}
-
-.memory .memory-item .address {
+.memory .memory-item .debug {
   padding: .5em;
   position: absolute;
   display: none;
@@ -323,24 +351,28 @@ body {
 }
 
 .memory .memory-item:hover {
-  background: #fff;
+  background: #fff !important;
 }
 
-.memory .memory-item:hover .address {
+.memory .memory-item:hover .debug {
   display: inline-block;
   background: #fff;
   color: black;
   width: auto;
   top: 0;
-  right: -4.1em;
+  right: 0;
+  transform: translateX(100%);
 }
 
-.memory .memory-item:hover .address:hover {
+.memory .memory-item:hover .debug:hover {
   display: none;
 }
 
-.program-counter {
-  background: #0f0 !important;
+.memory .memory-item:hover:nth-child(8n) .debug,
+.memory .memory-item:hover:nth-child(8n-1) .debug {
+  right: auto;
+  left: 0;
+  transform: translateX(-100%);
 }
 
 .registers {
@@ -395,4 +427,4 @@ body {
 }
 
 
-/*# sourceMappingURL=bundle.21539929316dee503032.css.map*/
+/*# sourceMappingURL=bundle.e74e142492b6df86a0ff.css.map*/

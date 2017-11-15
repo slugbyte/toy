@@ -10,7 +10,7 @@ export const WORD_SIZE = 2
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
 export const _REGISTERS = ['P', 'A', 'B', 'C', 'D']
 export const _TYPES = [
-  'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
+  'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE', 'DEREFERENCE'
 ]
 
 export const _INSTRUCTIONS = [ 
@@ -35,7 +35,8 @@ export let HALTED = (() => {
 
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
-export const isRegister = (value) => new RegExp('^[A-D]$').test(value)
+export const isRegister = (value) => new RegExp('^[A-D]$').test(value) 
+export const isDereference = (value) => new RegExp('^\\*[A-D]$').test(value)
 export const isConstant = (value) => new RegExp('^[a-f0-9]{1,4}$').test(value)
 export const isPointer = (value) => new RegExp('^x[a-f0-9]{1,4}$').test(value)
 export const isPin = (value) => new RegExp('^#[a-f0-9]{1,4}$').test(value)
@@ -49,6 +50,7 @@ export const cpuType = (SRC) => {
   if(isConstant(SRC)) return 'CONSTANT'
   if(isRegister(SRC)) return 'REGISTER'
   if(isInstruction(SRC)) return 'INSTRUCTION'
+  if(isDereference(SRC)) return 'DEREFERENCE'
   if(SRC.trim() === '') return 'BLANK'
   throw new Error(`toValue error SRC (${SRC}) unsuported`)
 }
@@ -237,6 +239,9 @@ export const tick = () => {
     incProgramCounter()
     if(type === 'REGISTER'){
       args.push(_REGISTERS[memory.getByte(REGISTERS.P)])
+      incProgramCounter()
+    } else if (type === 'DEREFERENCE') {
+      args.push('x' + util.toHexWord(REGISTERS[_REGISTERS[memory.getByte(REGISTERS.P)]]))
       incProgramCounter()
     } else if (type === 'POINTER'){
       args.push('x'+ util.toHexWord(memory.getWord(REGISTERS.P)))

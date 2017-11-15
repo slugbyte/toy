@@ -87,7 +87,7 @@ if (false) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.run = exports.reset = exports.tick = exports.HALT = exports.IN = exports.OUT = exports.NOP = exports.RANDB = exports.RANDW = exports.JGT = exports.JLT = exports.JEQ = exports.JMP = exports.LOG = exports.XOR = exports.OR = exports.AND = exports.SL = exports.SR = exports.MOD = exports.SUB = exports.ADD = exports.MOV = exports.pinSubscribe = exports.subscribe = exports.incProgramCounter = exports.togglePin = exports.setPinOff = exports.setPinOn = exports.setPin = exports.setProgramCounter = exports.setRegister = exports.toValue = exports.cpuType = exports.isInstruction = exports.isLabel = exports.isPin = exports.isPointer = exports.isConstant = exports.isRegister = exports.HALTED = exports.pinSubscribers = exports.subscribers = exports.PINS = exports.REGISTERS = exports._INSTRUCTIONS = exports._TYPES = exports._REGISTERS = exports.WORD_SIZE = undefined;
+exports.run = exports.reset = exports.tick = exports.HALT = exports.IN = exports.OUT = exports.NOP = exports.RANDB = exports.RANDW = exports.JGT = exports.JLT = exports.JEQ = exports.JMP = exports.LOG = exports.XOR = exports.OR = exports.AND = exports.SL = exports.SR = exports.MOD = exports.SUB = exports.ADD = exports.MOV = exports.pinSubscribe = exports.subscribe = exports.incProgramCounter = exports.togglePin = exports.setPinOff = exports.setPinOn = exports.setPin = exports.setProgramCounter = exports.setRegister = exports.toValue = exports.cpuType = exports.isInstruction = exports.isLabel = exports.isPin = exports.isPointer = exports.isConstant = exports.isDereference = exports.isRegister = exports.HALTED = exports.pinSubscribers = exports.subscribers = exports.PINS = exports.REGISTERS = exports._INSTRUCTIONS = exports._TYPES = exports._REGISTERS = exports.WORD_SIZE = undefined;
 
 var _util = __webpack_require__(2);
 
@@ -110,7 +110,7 @@ var WORD_SIZE = exports.WORD_SIZE = 2;
 // memory 
 // 0x0 programCounter
 var _REGISTERS = exports._REGISTERS = ['P', 'A', 'B', 'C', 'D'];
-var _TYPES = exports._TYPES = ['INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE'];
+var _TYPES = exports._TYPES = ['INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE', 'DEREFERENCE'];
 
 var _INSTRUCTIONS = exports._INSTRUCTIONS = ['NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT'];
 
@@ -142,6 +142,9 @@ var HALTED = exports.HALTED = function () {
 var isRegister = exports.isRegister = function isRegister(value) {
   return new RegExp('^[A-D]$').test(value);
 };
+var isDereference = exports.isDereference = function isDereference(value) {
+  return new RegExp('^\\*[A-D]$').test(value);
+};
 var isConstant = exports.isConstant = function isConstant(value) {
   return new RegExp('^[a-f0-9]{1,4}$').test(value);
 };
@@ -165,6 +168,7 @@ var cpuType = exports.cpuType = function cpuType(SRC) {
   if (isConstant(SRC)) return 'CONSTANT';
   if (isRegister(SRC)) return 'REGISTER';
   if (isInstruction(SRC)) return 'INSTRUCTION';
+  if (isDereference(SRC)) return 'DEREFERENCE';
   if (SRC.trim() === '') return 'BLANK';
   throw new Error('toValue error SRC (' + SRC + ') unsuported');
 };
@@ -366,6 +370,9 @@ var ops = {
     if (type === 'REGISTER') {
       args.push(_REGISTERS[memory.getByte(REGISTERS.P)]);
       incProgramCounter();
+    } else if (type === 'DEREFERENCE') {
+      args.push('x' + util.toHexWord(REGISTERS[_REGISTERS[memory.getByte(REGISTERS.P)]]));
+      incProgramCounter();
     } else if (type === 'POINTER') {
       args.push('x' + util.toHexWord(memory.getWord(REGISTERS.P)));
       incProgramCounter(2);
@@ -479,6 +486,34 @@ var compose = exports.compose = function compose() {
     return fns.reduce(function (result, fn) {
       return fn(result);
     }, arg);
+  };
+};
+
+var throttle = exports.throttle = function throttle(fn, ms) {
+  var ready = true;
+  return function () {
+    if (ready) {
+      ready = false;
+      setTimeout(function () {
+        return ready = true;
+      }, ms);
+      return fn.apply(undefined, arguments);
+    }
+  };
+};
+
+var debounce = exports.debounce = function debounce(fn, ms) {
+  var timeout = void 0;
+  return function () {
+    for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+      args[_key4] = arguments[_key4];
+    }
+
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(function () {
+      timeout = null;
+      fn.apply(undefined, args);
+    }, ms);
   };
 };
 
@@ -625,6 +660,12 @@ var numToHex = exports.numToHex = function numToHex(num) {
 };
 var hexToNum = exports.hexToNum = function hexToNum(hex) {
   return parseInt(hex, 16);
+};
+var numToBinary = exports.numToBinary = function numToBinary(num) {
+  return Number(num).toString(2);
+};
+var binaryToNum = exports.binaryToNum = function binaryToNum(binary) {
+  return parseInt(binary, 2);
 };
 
 var toPadedHex = exports.toPadedHex = function toPadedHex(pad) {
@@ -864,160 +905,6 @@ start();
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-var emptyFunction = __webpack_require__(4);
-
-/**
- * Similar to invariant but only logs a warning if the condition is not met.
- * This can be used to log issues in development environments in critical
- * paths. Removing the logging code for production environments will keep the
- * same logic and follow the same code paths.
- */
-
-var warning = emptyFunction;
-
-if (true) {
-  var printWarning = function printWarning(format) {
-    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-      args[_key - 1] = arguments[_key];
-    }
-
-    var argIndex = 0;
-    var message = 'Warning: ' + format.replace(/%s/g, function () {
-      return args[argIndex++];
-    });
-    if (typeof console !== 'undefined') {
-      console.error(message);
-    }
-    try {
-      // --- Welcome to debugging React ---
-      // This error was thrown as a convenience so that you can use this stack
-      // to find the callsite that caused this warning to fire.
-      throw new Error(message);
-    } catch (x) {}
-  };
-
-  warning = function warning(condition, format) {
-    if (format === undefined) {
-      throw new Error('`warning(condition, format, ...args)` requires a warning ' + 'message argument');
-    }
-
-    if (format.indexOf('Failed Composite propType: ') === 0) {
-      return; // Ignore CompositeComponent proptype check.
-    }
-
-    if (!condition) {
-      for (var _len2 = arguments.length, args = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
-        args[_key2 - 2] = arguments[_key2];
-      }
-
-      printWarning.apply(undefined, [format].concat(args));
-    }
-  };
-}
-
-module.exports = warning;
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-
-
-/**
- * Use invariant() to assert state which your program assumes to be true.
- *
- * Provide sprintf-style format (only %s is supported) and arguments
- * to provide information about what broke and what you were
- * expecting.
- *
- * The invariant message will be stripped in production, but the invariant
- * will remain to ensure logic does not differ in production.
- */
-
-var validateFormat = function validateFormat(format) {};
-
-if (true) {
-  validateFormat = function validateFormat(format) {
-    if (format === undefined) {
-      throw new Error('invariant requires an error message argument');
-    }
-  };
-}
-
-function invariant(condition, format, a, b, c, d, e, f) {
-  validateFormat(format);
-
-  if (!condition) {
-    var error;
-    if (format === undefined) {
-      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
-    } else {
-      var args = [a, b, c, d, e, f];
-      var argIndex = 0;
-      error = new Error(format.replace(/%s/g, function () {
-        return args[argIndex++];
-      }));
-      error.name = 'Invariant Violation';
-    }
-
-    error.framesToPop = 1; // we don't care about invariant's own frame
-    throw error;
-  }
-}
-
-module.exports = invariant;
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 
 
 Object.defineProperty(exports, "__esModule", {
@@ -1050,7 +937,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 // state
 var _program = exports._program = {};
 var _error = exports._error = '';
-var _text = exports._text = '_main\n    OUT 1 0\n    JMP _on\n\n_loop\n    JGT A 64 _flip\n    OUT x80 A\n    ADD 1 A\n    JMP _loop\n\n_flip\n    MOV 0 A\n    JGT x80 0 _off\n    JMP _on\n\n_on\n    MOV 1 x80\n    JMP _loop\n    \n_off\n    MOV 0 x80\n    JMP _loop';
+var _text = exports._text = '\n_main\n    OUT 1 0\n    JMP _on\n\n_loop\n    JGT A 64 _flip\n    OUT x80 A\n    ADD 1 A\n    JMP _loop\n\n_flip\n    MOV 0 A\n    JGT x80 0 _off\n    JMP _on\n\n_on\n    MOV 1 x80\n    JMP _loop\n    \n_off\n    MOV 0 x80\n    JMP _loop\n'.trim();
 
 var Bug = function (_Error) {
   _inherits(Bug, _Error);
@@ -1172,6 +1059,7 @@ var transform = exports.transform = function transform(ast) {
   //     compile instruction 
   //     compile argument
   //     compute label pointers
+  var debug = [];
   var typeToByte = function typeToByte(type) {
     return util.toHexByte(cpu._TYPES.indexOf(type));
   };
@@ -1181,10 +1069,12 @@ var transform = exports.transform = function transform(ast) {
         return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value));
       case 'REGISTER':
         return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value));
+      case 'DEREFERENCE':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)));
       case 'CONSTANT':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
       case 'POINTER':
-        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
+        return typeToByte(token.type) + util.toHexWord(token.value.substr(1));
       case 'PIN':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
       case 'LABEL':
@@ -1193,13 +1083,17 @@ var transform = exports.transform = function transform(ast) {
   };
 
   var lastSize = 0;
+  var totalOffset = 0;
   var labels = ast.body.map(function (label) {
     var instructions = label.body.map(function (instruction) {
+      var paramOffset = totalOffset + 2;
       var params = instruction.params.map(function (param) {
         // param bytecode and size
         var bytecode = toByteCode(param);
         var size = param.type === 'LABEL' ? 3 : bytecode.length / 2;
-        return { param: param, bytecode: bytecode, size: size };
+        var debug = _extends({}, param, { size: size, offset: paramOffset });
+        paramOffset += size;
+        return { param: param, bytecode: bytecode, size: size, debug: debug };
       });
 
       // instruction bytecode and size
@@ -1210,6 +1104,11 @@ var transform = exports.transform = function transform(ast) {
       var size = params.reduce(function (r, p) {
         return p.size + r;
       }, 2);
+      debug.push({ type: instruction.type, name: instruction.value, size: 2, offset: totalOffset });
+      debug = debug.concat(params.map(function (p) {
+        return p.debug;
+      }));
+      totalOffset += size;
       return { instruction: instruction, instructionWord: instructionWord, params: params, bytecode: bytecode, size: size };
     });
 
@@ -1243,7 +1142,7 @@ var transform = exports.transform = function transform(ast) {
     return r.replace(new RegExp('=' + label.label.value + '=', 'g'), address);
   }, bytecode);
 
-  return { ast: ast, labels: labels, bytecode: bytecode, size: size };
+  return { ast: ast, labels: labels, bytecode: bytecode, size: size, debug: debug };
 };
 
 var assemble = exports.assemble = function assemble(program) {
@@ -1266,6 +1165,162 @@ var build = exports.build = function build() {
     exports._error = _error = err.message;
   }
 };
+
+build();
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
+
+
+
+var emptyFunction = __webpack_require__(4);
+
+/**
+ * Similar to invariant but only logs a warning if the condition is not met.
+ * This can be used to log issues in development environments in critical
+ * paths. Removing the logging code for production environments will keep the
+ * same logic and follow the same code paths.
+ */
+
+var warning = emptyFunction;
+
+if (true) {
+  var printWarning = function printWarning(format) {
+    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      args[_key - 1] = arguments[_key];
+    }
+
+    var argIndex = 0;
+    var message = 'Warning: ' + format.replace(/%s/g, function () {
+      return args[argIndex++];
+    });
+    if (typeof console !== 'undefined') {
+      console.error(message);
+    }
+    try {
+      // --- Welcome to debugging React ---
+      // This error was thrown as a convenience so that you can use this stack
+      // to find the callsite that caused this warning to fire.
+      throw new Error(message);
+    } catch (x) {}
+  };
+
+  warning = function warning(condition, format) {
+    if (format === undefined) {
+      throw new Error('`warning(condition, format, ...args)` requires a warning ' + 'message argument');
+    }
+
+    if (format.indexOf('Failed Composite propType: ') === 0) {
+      return; // Ignore CompositeComponent proptype check.
+    }
+
+    if (!condition) {
+      for (var _len2 = arguments.length, args = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+        args[_key2 - 2] = arguments[_key2];
+      }
+
+      printWarning.apply(undefined, [format].concat(args));
+    }
+  };
+}
+
+module.exports = warning;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
+
+
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var validateFormat = function validateFormat(format) {};
+
+if (true) {
+  validateFormat = function validateFormat(format) {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  };
+}
+
+function invariant(condition, format, a, b, c, d, e, f) {
+  validateFormat(format);
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(format.replace(/%s/g, function () {
+        return args[argIndex++];
+      }));
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+}
+
+module.exports = invariant;
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
 
 /***/ }),
 /* 10 */
@@ -1379,8 +1434,8 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 if (true) {
-  var invariant = __webpack_require__(7);
-  var warning = __webpack_require__(6);
+  var invariant = __webpack_require__(8);
+  var warning = __webpack_require__(7);
   var ReactPropTypesSecret = __webpack_require__(15);
   var loggedTypeFailures = {};
 }
@@ -22508,7 +22563,7 @@ function stubFalse() {
 
 module.exports = isEqual;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(50)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(50)(module)))
 
 /***/ }),
 /* 20 */
@@ -22556,11 +22611,15 @@ var _clock = __webpack_require__(5);
 
 var clock = _interopRequireWildcard(_clock);
 
+var _audio = __webpack_require__(67);
+
+var audio = _interopRequireWildcard(_audio);
+
 var _memory = __webpack_require__(3);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(9);
+var _assembler = __webpack_require__(6);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -22572,12 +22631,16 @@ var container = document.createElement('div');
 container.className = 'container';
 document.body.appendChild(container);
 _reactDom2.default.render(React.createElement(_app2.default, null), container);
+//import * as buzzer from './lib/buzzer.js'
+
 
 window.cpu = cpu;
 window.util = util;
 window.clock = clock;
 window.memory = memory;
 window.assembler = assembler;
+window.audio = audio;
+//window.buzzer = buzzer
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
@@ -22602,9 +22665,9 @@ if (true) {
 'use strict';
 
 var objectAssign$1 = __webpack_require__(10);
-var require$$0 = __webpack_require__(6);
+var require$$0 = __webpack_require__(7);
 var emptyObject = __webpack_require__(14);
-var invariant = __webpack_require__(7);
+var invariant = __webpack_require__(8);
 var emptyFunction = __webpack_require__(4);
 var checkPropTypes = __webpack_require__(11);
 
@@ -24358,11 +24421,11 @@ if (true) {
 'use strict';
 
 var react = __webpack_require__(0);
-var invariant = __webpack_require__(7);
+var invariant = __webpack_require__(8);
 var ExecutionEnvironment = __webpack_require__(16);
 var _assign = __webpack_require__(10);
 var EventListener = __webpack_require__(26);
-var require$$0 = __webpack_require__(6);
+var require$$0 = __webpack_require__(7);
 var hyphenateStyleName = __webpack_require__(27);
 var emptyFunction = __webpack_require__(4);
 var camelizeStyleName = __webpack_require__(29);
@@ -41878,8 +41941,8 @@ module.exports = performance || {};
 
 
 var emptyFunction = __webpack_require__(4);
-var invariant = __webpack_require__(7);
-var warning = __webpack_require__(6);
+var invariant = __webpack_require__(8);
+var warning = __webpack_require__(7);
 var assign = __webpack_require__(10);
 
 var ReactPropTypesSecret = __webpack_require__(15);
@@ -42985,7 +43048,7 @@ exports.clearImmediate = clearImmediate;
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(44)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(44)))
 
 /***/ }),
 /* 44 */
@@ -43204,7 +43267,7 @@ var _memory = __webpack_require__(3);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(9);
+var _assembler = __webpack_require__(6);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -43802,7 +43865,7 @@ function get_blob() {
   }
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 50 */
@@ -45259,7 +45322,7 @@ function get(object, path, defaultValue) {
 
 module.exports = get;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 53 */
@@ -45669,7 +45732,7 @@ var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
 
-var _assembler = __webpack_require__(9);
+var _assembler = __webpack_require__(6);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -45917,7 +45980,7 @@ var _memory = __webpack_require__(3);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(9);
+var _assembler = __webpack_require__(6);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -46041,7 +46104,13 @@ var _memory = __webpack_require__(3);
 
 var memory = _interopRequireWildcard(_memory);
 
+var _assembler = __webpack_require__(6);
+
+var assembler = _interopRequireWildcard(_assembler);
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -46055,6 +46124,22 @@ var toHexMemory = util.map(function (value, index) {
     address: '0x' + util.toHexWord(index)
   };
 });
+
+var getDebugData = function getDebugData(index) {
+  if (index > assembler._program.size) return '';
+  if (!assembler._program.debug) return '';
+  return assembler._program.debug.reverse().reduce(function (r, d) {
+    var wat = d.offset + d.size;
+    if (index < wat && index >= d.offset) {
+      var result = d.type;
+      return {
+        type: result.toLowerCase(),
+        value: d.value ? d.value : d.name
+      };
+    }
+    return r;
+  }, '');
+};
 
 var Memory = function (_React$Component) {
   _inherits(Memory, _React$Component);
@@ -46091,19 +46176,38 @@ var Memory = function (_React$Component) {
         'div',
         { className: 'memory' },
         hexMemory.map(function (data, index) {
-          var className = dom.classToggler({
+          var debug = getDebugData(index);
+          var className = dom.classToggler(_defineProperty({
             'memory-item': true,
             'program-counter': index == cpu.REGISTERS.P && clock._debug.get()
-          });
+          }, debug.type, true));
           return React.createElement(
             'div',
             { className: className, key: data.address },
             React.createElement(
-              'p',
-              { className: 'address' },
-              ' ',
-              data.address,
-              ' '
+              'div',
+              { className: 'debug' },
+              React.createElement(
+                'p',
+                null,
+                ' ',
+                data.address,
+                '  '
+              ),
+              React.createElement(
+                'p',
+                null,
+                ' ',
+                debug.type,
+                ' '
+              ),
+              React.createElement(
+                'p',
+                null,
+                '  ',
+                debug.value,
+                ' '
+              )
             ),
             React.createElement(
               'p',
@@ -46224,6 +46328,200 @@ exports.default = Registers;
 
 // removed by extract-text-webpack-plugin
 
+/***/ }),
+/* 67 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+// audio context
+var ctx = exports.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+// audio out
+var output = exports.output = ctx.destination;
+var now = exports.now = function now() {
+  return ctx.currentTime;
+};
+
+// WAVE SHAPES
+var SINE = exports.SINE = 'sine';
+var SQUARE = exports.SQUARE = 'square';
+var TRIANGLE = exports.TRIANGLE = 'triangle';
+var SAWTOOTH = exports.SAWTOOTH = 'sawtooth';
+var shapes = exports.shapes = { SINE: SINE, SQUARE: SQUARE, TRIANGLE: TRIANGLE, SAWTOOTH: SAWTOOTH
+
+  // MODULATION TYPES
+};var SET = exports.SET = 'set';
+var LINEAR = exports.LINEAR = 'linear';
+var EXPONENTIAL = exports.EXPONENTIAL = 'exponential';
+var curves = exports.curves = { SET: SET, LINEAR: LINEAR, EXPONENTIAL: EXPONENTIAL
+
+  // FILTER TYPES
+};var NOTCH = exports.NOTCH = 'notch';
+var PEAKING = exports.PEAKING = 'peaking';
+var ALLPASS = exports.ALLPASS = 'allpass';
+var LOWPASS = exports.LOWPASS = 'lowpass';
+var BANDPASS = exports.BANDPASS = 'bandpass';
+var HIGHPASS = exports.HIGHPASS = 'highpass';
+var LOWSHELF = exports.LOWSHELF = 'lowshelf';
+var HIGHSHELF = exports.HIGHSHELF = 'highshelf';
+var filters = exports.filters = { NOTCH: NOTCH, PEAKING: PEAKING, ALLPASS: ALLPASS, LOWPASS: LOWPASS, BANDPASS: BANDPASS, HIGHPASS: HIGHPASS, LOWSHELF: LOWSHELF, HIGHSHELF: HIGHSHELF };
+
+var Modulation = exports.Modulation = function Modulation(_ref) {
+  var _ref$type = _ref.type,
+      type = _ref$type === undefined ? SET : _ref$type,
+      _ref$time = _ref.time,
+      time = _ref$time === undefined ? 0 : _ref$time,
+      _ref$value = _ref.value,
+      value = _ref$value === undefined ? 0 : _ref$value;
+  return { type: type, time: time, value: value };
+};
+
+var AD = exports.AD = function AD(_ref2) {
+  var _ref2$gain = _ref2.gain,
+      gain = _ref2$gain === undefined ? 1 : _ref2$gain,
+      _ref2$attackTime = _ref2.attackTime,
+      attackTime = _ref2$attackTime === undefined ? 0.5 : _ref2$attackTime,
+      _ref2$decayTime = _ref2.decayTime,
+      decayTime = _ref2$decayTime === undefined ? 0.5 : _ref2$decayTime,
+      _ref2$attackType = _ref2.attackType,
+      attackType = _ref2$attackType === undefined ? LINEAR : _ref2$attackType,
+      _ref2$decayType = _ref2.decayType,
+      decayType = _ref2$decayType === undefined ? LINEAR : _ref2$decayType;
+
+  return [Modulation({ type: SET, value: 0.01 }), Modulation({ type: attackType, value: gain, time: attackTime }), Modulation({ type: decayType, value: 0.01, time: decayTime })];
+};
+
+var ADSR = exports.ADSR = function ADSR(_ref3) {
+  var _ref3$gain = _ref3.gain,
+      gain = _ref3$gain === undefined ? 1 : _ref3$gain,
+      _ref3$attackTime = _ref3.attackTime,
+      attackTime = _ref3$attackTime === undefined ? 0.5 : _ref3$attackTime,
+      _ref3$attackType = _ref3.attackType,
+      attackType = _ref3$attackType === undefined ? LINEAR : _ref3$attackType,
+      _ref3$decayTime = _ref3.decayTime,
+      decayTime = _ref3$decayTime === undefined ? 0.5 : _ref3$decayTime,
+      _ref3$decayType = _ref3.decayType,
+      decayType = _ref3$decayType === undefined ? LINEAR : _ref3$decayType,
+      _ref3$sustainTime = _ref3.sustainTime,
+      sustainTime = _ref3$sustainTime === undefined ? 0.5 : _ref3$sustainTime,
+      _ref3$sustainLevel = _ref3.sustainLevel,
+      sustainLevel = _ref3$sustainLevel === undefined ? 0.5 : _ref3$sustainLevel,
+      _ref3$releaseTime = _ref3.releaseTime,
+      releaseTime = _ref3$releaseTime === undefined ? 0.5 : _ref3$releaseTime,
+      _ref3$releaseType = _ref3.releaseType,
+      releaseType = _ref3$releaseType === undefined ? LINEAR : _ref3$releaseType;
+
+  return [Modulation({ type: SET, value: 0.01, time: 0 }), Modulation({ type: attackType, value: gain, time: attackTime }), Modulation({ type: decayType, value: gain * sustainLevel, time: decayTime }), Modulation({ type: SET, value: gain * sustainLevel, time: sustainTime }), Modulation({ type: releaseType, value: 0.01, time: releaseTime })];
+};
+
+var applyEnvelope = exports.applyEnvelope = function applyEnvelope(_ref4) {
+  var subject = _ref4.subject,
+      steps = _ref4.steps;
+
+  var ellapsed = ctx.currentTime;
+  steps.forEach(function (mod) {
+    ellapsed += mod.time;
+    switch (mod.type) {
+      case SET:
+        subject.setValueAtTime(mod.value, ellapsed);
+        break;
+      case LINEAR:
+        subject.linearRampToValueAtTime(mod.value, ellapsed);
+        break;
+      case EXPONENTIAL:
+        subject.exponentialRampToValueAtTime(mod.value, ellapsed);
+        break;
+    }
+  });
+};
+
+var applyParam = exports.applyParam = function applyParam(_ref5) {
+  var subject = _ref5.subject,
+      value = _ref5.value;
+
+  var now = ctx.currentTime;
+  if (typeof value === 'number') subject.setValueAtTime(value, now);else if (Array.isArray(value)) applyEnvelope({ subject: subject, steps: value });else if (value.connect) value.connect(subject);else throw new TypeError('value param type is not supported');
+};
+
+var Osc = exports.Osc = function Osc(_ref6) {
+  var _ref6$start = _ref6.start,
+      start = _ref6$start === undefined ? 0 : _ref6$start,
+      _ref6$stop = _ref6.stop,
+      stop = _ref6$stop === undefined ? null : _ref6$stop,
+      _ref6$frequency = _ref6.frequency,
+      frequency = _ref6$frequency === undefined ? 220 : _ref6$frequency,
+      _ref6$type = _ref6.type,
+      type = _ref6$type === undefined ? SINE : _ref6$type,
+      _ref6$detune = _ref6.detune,
+      detune = _ref6$detune === undefined ? 0 : _ref6$detune;
+
+  var now = ctx.currentTime;
+  var result = ctx.createOscillator();
+  result.type = type;
+  applyParam({ subject: result.frequency, value: frequency });
+  if (start !== null) result.start(start);
+  if (stop !== null) result.stop(now + stop);
+  return result;
+};
+
+var Gain = exports.Gain = function Gain(_ref7) {
+  var _ref7$gain = _ref7.gain,
+      gain = _ref7$gain === undefined ? 1 : _ref7$gain;
+
+  var result = ctx.createGain();
+  applyParam({ subject: result.gain, value: gain });
+  return result;
+};
+
+var Delay = exports.Delay = function Delay(_ref8) {
+  var _ref8$delayTime = _ref8.delayTime,
+      delayTime = _ref8$delayTime === undefined ? 0 : _ref8$delayTime;
+
+  var result = ctx.createDelay();
+  applyParam({ subject: result.delayTime, value: delayTime });
+  return result;
+};
+
+var Filter = exports.Filter = function Filter(_ref9) {
+  var _ref9$Q = _ref9.Q,
+      Q = _ref9$Q === undefined ? 1 : _ref9$Q,
+      _ref9$gain = _ref9.gain,
+      gain = _ref9$gain === undefined ? 0 : _ref9$gain,
+      _ref9$detune = _ref9.detune,
+      detune = _ref9$detune === undefined ? 0 : _ref9$detune,
+      _ref9$frequency = _ref9.frequency,
+      frequency = _ref9$frequency === undefined ? 350 : _ref9$frequency,
+      _ref9$type = _ref9.type,
+      type = _ref9$type === undefined ? LOWPASS : _ref9$type;
+
+  var result = ctx.createBiquadFilter();
+  result.type = type;
+  applyParam({ subject: result.Q, value: Q });
+  applyParam({ subject: result.gain, value: gain });
+  applyParam({ subject: result.detune, value: detune });
+  applyParam({ subject: result.frequency, value: frequency });
+  return result;
+};
+
+var connect = exports.connect = function connect(nodes) {
+  for (var i = 0; i < nodes.length - 1; i++) {
+    nodes[i].connect(nodes[i + 1]);
+  }return nodes;
+};
+
+var patch = exports.patch = function patch() {
+  for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return connect(args);
+};
+
 /***/ })
 /******/ ]);
-//# sourceMappingURL=bundle.21539929316dee503032.js.map
+//# sourceMappingURL=bundle.e74e142492b6df86a0ff.js.map

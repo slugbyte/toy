@@ -1,3 +1,20 @@
+.instruction
+  background: #69f461 !important
+.constant
+  background: #70bae5 !important
+.register
+  background: #f4c869 !important
+.pointer
+  background: #6190f4 !important
+.dereference
+  background: #f28448 !important
+.label 
+  background: #f489f3 !important
+
+.program-counter
+  background: #fff !important
+  color: #000
+
 .memory 
   width: 100%
   height: 100%
@@ -12,25 +29,26 @@
     float: left
     font-size: 1.25em
     padding: .5em
-    &:nth-child(8n), &:nth-child(8n-1) 
-      .address
-        right: 2.8em !important
-    .address
+    .debug
       padding: .5em
       position: absolute
       display: none;
       z-index: 100
     &:hover
-      background: #fff
-      .address
+      background: #fff !important
+      .debug
         display: inline-block;
         background: #fff
         color: black;
         width: auto
         top: 0
-        right: -4.1em
+        right: 0
+        transform: translateX(100%)
         &:hover 
           display: none
+      &:nth-child(8n), &:nth-child(8n-1) 
+        .debug
+          right: auto
+          left: 0
+          transform: translateX(-100%)
 
-.program-counter
-  background: #0f0 !important

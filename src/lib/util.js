@@ -15,6 +15,28 @@ export const partial = (fn, ...defautls) => (...args) => fn(...defaults, ...args
 export const partialRight = (fn, ...defautls) => (...args) => fn(...args, ...defaults)
 export const compose = (...fns) => (arg) => fns.reduce((result, fn) => fn(result), arg)
 
+export const throttle = (fn, ms) => {
+  let ready = true;
+  return (...args) => {
+    if(ready){
+      ready = false
+      setTimeout(() => ready = true, ms)
+      return fn(...args)
+    }
+  }
+}
+
+export const debounce = (fn, ms) => {
+  let timeout;
+  return (...args) => {
+    if(timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => {
+      timeout = null
+      fn(...args)
+    }, ms)
+  }
+}
+
 // lists
 export const reduce = (cb) => (collection) => Array.prototype.reduce.call(collection, cb)
 export const filter = (cb) => (collection) => Array.prototype.filter.call(collection, cb)
@@ -59,6 +81,8 @@ export const gt = (a) => (b) => b > a
 
 export const numToHex = (num) => Number(num).toString(16) 
 export const hexToNum = (hex) => parseInt(hex, 16)
+export const numToBinary = (num) => Number(num).toString(2)
+export const binaryToNum = (binary) => parseInt(binary, 2)
 
 export const toPadedHex = (pad) => (value) => {
   value = isString(value) ? hexToNum(value) : value

@@ -1,0 +1,26 @@
+_main
+    RANDB A
+    MOD 14 A
+    RANDB B
+    MOD 14 B
+    OUT 1 A
+    OUT 0 B
+    
+    ADD 14 A
+    ADD 14 B
+    OUT 1 A
+    OUT 0 B
+     
+    ADD 14 A
+    ADD 14 B
+    OUT 1 A
+    OUT 0 B
+        ADD 14 A
+    ADD 14 B
+    OUT 1 A
+    OUT 0 B
+        ADD 14 A
+    ADD 14 B
+    OUT 1 A
+    OUT 0 B
+    JMP _main

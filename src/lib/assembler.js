@@ -127,7 +127,7 @@ export const transform = (ast) => {
   //     compile argument
   //     compute label pointers
   let typeToByte = (type) => util.toHexByte(cpu._TYPES.indexOf(type))
-  let toByteCode = (token) => {
+  let toByteCode = (token, isDest) => {
     switch(token.type){
       case 'INSTRUCTION':
         return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value))
@@ -138,6 +138,8 @@ export const transform = (ast) => {
       case 'CONSTANT':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'POINTER':
+        if(isDest)
+          return typeToByte(token.type) + util.toHexWord(token.value.slice(1))
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'PIN':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
@@ -149,9 +151,10 @@ export const transform = (ast) => {
   let lastSize = 0
   let labels = ast.body.map(label => {
     let instructions = label.body.map(instruction => {
-      let params = instruction.params.map(param => {
+      let params = instruction.params.map((param, i) => {
         // param bytecode and size
-        let bytecode = toByteCode(param)
+        let isDest = i == instruction.params.length - 1
+        let bytecode = toByteCode(param, isDest)
         let size = param.type === 'LABEL' ? 3 : bytecode.length / 2
         return {param, bytecode, size}
       })

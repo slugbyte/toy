@@ -277,6 +277,10 @@ export const tick = () => {
     } else if (type === 'CONSTANT'){
       args.push(util.toHexWord(memory.getWord(REGISTERS.P)))
       incProgramCounter(2)
+    } else if (type === 'DEREFERENCE'){
+      let arg = "*" + _REGISTERS[memory.getByte(REGISTERS.P)];
+      args.push(arg);
+      incProgramCounter()
     }
   }
 

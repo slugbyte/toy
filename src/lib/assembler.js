@@ -209,3 +209,5 @@ export const build = () => {
     _error = err.message
   }
 }
+
+build()

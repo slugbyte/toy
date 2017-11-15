@@ -8,6 +8,15 @@ import * as memory from './memory.js'
 export let _program = {}
 export let _error = ''
 export let _text = `_main
+    PUSH 1
+    PUSH 2
+    PUSH 3
+    PUSH 4
+    POP D
+    POP C
+    POP B
+    POP A
+    
     OUT 1 0
     CALL _on
     JMP _loop

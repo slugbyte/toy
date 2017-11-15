@@ -13,6 +13,7 @@ export const WORD_SIZE = 2
 export const _REGISTERS = ['P', 'A', 'B', 'C', 'D', 'Z', 'S']
 export const _TYPES = [
   'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE',
+  'DEREFERENCE',
 ]
 
 export const _INSTRUCTIONS = [
@@ -47,6 +48,7 @@ export const isPointer = (value) => new RegExp('^x[a-f0-9]{1,4}$').test(value)
 export const isPin = (value) => new RegExp('^#[a-f0-9]{1,4}$').test(value)
 export const isLabel = (value) => new RegExp('^_[a-z_]+$').test(value)
 export const isInstruction = (value) => _INSTRUCTIONS.includes(value)
+export const isDereference = (value) => new RegExp('^\\*[A-DSZ]$').test(value)
 
 export const cpuType = (SRC) => {
   if(isPin(SRC)) return 'PIN'
@@ -55,6 +57,7 @@ export const cpuType = (SRC) => {
   if(isConstant(SRC)) return 'CONSTANT'
   if(isRegister(SRC)) return 'REGISTER'
   if(isInstruction(SRC)) return 'INSTRUCTION'
+  if(isDereference(SRC)) return 'DEREFERENCE'
   if(SRC.trim() === '') return 'BLANK'
   throw new Error(`toValue error SRC (${SRC}) unsuported`)
 }
@@ -62,6 +65,12 @@ export const cpuType = (SRC) => {
 export const toValue = (SRC) => {
   if(util.isNum(SRC)) return SRC
   if(isRegister(SRC)) return REGISTERS[SRC]
+  // TODO: this doesn't assembly correctly for "MOV 99 x60"
+  // When assembling it shouldn't read from memory.
+  // it shows as toByteCode:
+  // MOV 0001
+  //  99 010099
+  // x60 030000
   if(isPointer(SRC)) return memory.getByte(SRC.substr(1))
   if(isConstant(SRC)) return util.hexToNum(SRC)
   throw new Error('toValue error SRC unsuported')
@@ -117,8 +126,13 @@ export const pinSubscribe = (cb) => {
 
 // INSTRUCTIONS
 export const MOV = (SRC, DST) => {
-  if(isRegister(DST)) setRegister(toValue(SRC), DST)
-  if(isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1))
+  if(isDereference(SRC)) {
+    // chop "*" off "*A"
+    SRC = SRC.substr(1);
+    let val = memory.getByte(toValue(SRC))
+    setRegister(val, DST)
+  } else if(isRegister(DST)) setRegister(toValue(SRC), DST)
+  else if(isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1))
 }
 
 export const ADD = (SRC, DST) => {

@@ -9,26 +9,10 @@ export let _program = {}
 export let _error = ''
 export let _text = `_main
     OUT 1 0
-    CALL _on
-
-_loop
-    JGT A 64 _flip
-    OUT x80 A
-    ADD 1 A
-    JMP _loop
-
-_flip
-    MOV 0 A
-    JGT x80 0 _off
-    JMP _on
-
-_on
-    MOV 1 x80
-    JMP _loop
-    
-_off
-    MOV 0 x80
-    JMP _loop`
+    MOV 99 x60
+    MOV 60 B
+    MOV *B C
+    HALT`
 
 
 class Bug extends Error {
@@ -149,6 +133,8 @@ export const transform = (ast) => {
         return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value))
       case 'REGISTER':
         return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value))
+      case 'DEREFERENCE':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)))
       case 'CONSTANT':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'POINTER':

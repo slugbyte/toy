@@ -65,12 +65,6 @@ export const cpuType = (SRC) => {
 export const toValue = (SRC) => {
   if(util.isNum(SRC)) return SRC
   if(isRegister(SRC)) return REGISTERS[SRC]
-  // TODO: this doesn't assembly correctly for "MOV 99 x60"
-  // When assembling it shouldn't read from memory.
-  // it shows as toByteCode:
-  // MOV 0001
-  //  99 010099
-  // x60 030000
   if(isPointer(SRC)) return memory.getByte(SRC.substr(1))
   if(isConstant(SRC)) return util.hexToNum(SRC)
   throw new Error('toValue error SRC unsuported')
@@ -216,7 +210,7 @@ export const JGT = (SRCA, SRCB, DST) => {
 
 export const CALL = (DST) => {
   // push current program counter to stack
-  let returnAddress = REGISTERS.P + 5
+  let returnAddress = REGISTERS.P
   REGISTERS.S -= 2;
   memory.setByte(returnAddress, REGISTERS.S);
   
@@ -224,7 +218,11 @@ export const CALL = (DST) => {
   setProgramCounter(to)
 }
 
-export const RET = () => { }
+export const RET = () => {
+  let ret = memory.getByte(REGISTERS.S);
+  setProgramCounter(ret)
+  REGISTERS.S += 2;
+}
 
 export const RANDW = (DST) => {
   MOV(util.rand(0xffff), DST)

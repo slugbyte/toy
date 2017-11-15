@@ -12,7 +12,19 @@ export let _text = `_main
     MOV 99 x60
     MOV 60 B
     MOV *B C
-    HALT`
+    CALL _two
+    CALL _three
+    HALT
+    
+  _two
+    OUT 1 1
+    MOV *S C
+    RET
+    
+  _three
+    OUT 1 2
+    MOV *S D
+    RET`
 
 
 class Bug extends Error {

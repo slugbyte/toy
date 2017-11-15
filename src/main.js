@@ -12,7 +12,7 @@ import * as util from './lib/util.js'
 import * as clock from './lib/clock.js'
 import * as audio from './lib/audio.js'
 import * as memory from './lib/memory.js'
-import * as buzzer from './lib/buzzer.js'
+//import * as buzzer from './lib/buzzer.js'
 import * as assembler from './lib/assembler.js'
 
 window.cpu = cpu
@@ -21,4 +21,4 @@ window.clock = clock
 window.memory = memory
 window.assembler = assembler 
 window.audio = audio
-window.buzzer = buzzer
+//window.buzzer = buzzer

@@ -9,6 +9,9 @@ export let _program = {}
 export let _error = ''
 export let _text = `
 _main
+  MOV 11 A
+  MOV ab *A
+  HALT
 `.trim()
 
 class Bug extends Error {
@@ -122,6 +125,7 @@ export const transform = (ast) => {
   //     compile instruction 
   //     compile argument
   //     compute label pointers
+  let debug = []
   let typeToByte = (type) => util.toHexByte(cpu._TYPES.indexOf(type))
   let toByteCode = (token) => {
     switch(token.type){
@@ -129,10 +133,12 @@ export const transform = (ast) => {
         return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value))
       case 'REGISTER':
         return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value))
+      case 'DEREFERENCE':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)))
       case 'CONSTANT':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'POINTER':
-        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
+        return typeToByte(token.type) + util.toHexWord(token.value.substr(1))
       case 'PIN':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'LABEL':
@@ -141,19 +147,26 @@ export const transform = (ast) => {
   }
 
   let lastSize = 0
+  let totalOffset = 0
   let labels = ast.body.map(label => {
     let instructions = label.body.map(instruction => {
+      let paramOffset = totalOffset + 2
       let params = instruction.params.map(param => {
         // param bytecode and size
         let bytecode = toByteCode(param)
         let size = param.type === 'LABEL' ? 3 : bytecode.length / 2
-        return {param, bytecode, size}
+        let debug = {...param, size, offset: paramOffset}
+        paramOffset += size
+        return {param, bytecode, size, debug}
       })
 
       // instruction bytecode and size
       let instructionWord = toByteCode(instruction)
       let bytecode = [instructionWord].concat(params.map(p => p.bytecode).join('')).join('')
       let size = params.reduce((r, p) => p.size + r, 2)
+      debug.push({type: instruction.type, name: instruction.value, size, offset: totalOffset})
+      debug = debug.concat(params.map(p => p.debug))
+      totalOffset += size
       return {instruction, instructionWord, params, bytecode, size}
     })
 
@@ -162,7 +175,7 @@ export const transform = (ast) => {
     let offset = lastSize 
     let size = instructions.reduce((r, i) => r + i.size, 0)
     lastSize += size
-    return {label, instructions, bytecode, size, offset}
+    return {label, instructions, bytecode, size, offset }
   })
 
   // program bytecode and size
@@ -179,7 +192,7 @@ export const transform = (ast) => {
     return r.replace(new RegExp(`=${label.label.value}=`, 'g'), address)
   }, bytecode)
   
-  return {ast, labels, bytecode, size}
+  return {ast, labels, bytecode, size, debug}
 }
 
 export const assemble = (program) => {

@@ -9,9 +9,27 @@ export let _program = {}
 export let _error = ''
 export let _text = `
 _main
-  MOV 11 A
-  MOV ab *A
-  HALT
+    OUT 1 0
+    JMP _on
+
+_loop
+    JGT A 64 _flip
+    OUT x80 A
+    ADD 1 A
+    JMP _loop
+
+_flip
+    MOV 0 A
+    JGT x80 0 _off
+    JMP _on
+
+_on
+    MOV 1 x80
+    JMP _loop
+    
+_off
+    MOV 0 x80
+    JMP _loop
 `.trim()
 
 class Bug extends Error {
@@ -164,7 +182,7 @@ export const transform = (ast) => {
       let instructionWord = toByteCode(instruction)
       let bytecode = [instructionWord].concat(params.map(p => p.bytecode).join('')).join('')
       let size = params.reduce((r, p) => p.size + r, 2)
-      debug.push({type: instruction.type, name: instruction.value, size, offset: totalOffset})
+      debug.push({type: instruction.type, name: instruction.value, size: 2, offset: totalOffset})
       debug = debug.concat(params.map(p => p.debug))
       totalOffset += size
       return {instruction, instructionWord, params, bytecode, size}

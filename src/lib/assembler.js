@@ -224,10 +224,10 @@ export const setProgram = (text) => {
 
 export const build = () => {
   try {
+    memory.clear()
     _program = assemble(_text)
     _error = ''
     cpu.reset()
-    memory.clear()
     memory.load(_program.bytecode)
   } catch (err) {
     console.error('__BUILD_ERROR__', err)

@@ -1,3 +1,4 @@
+@import 'vars'
 .instruction
   background: #69f461 !important
 .constant
@@ -5,7 +6,7 @@
 .register
   background: #f4c869 !important
 .pointer
-  background: #6190f4 !important
+  background: #79a2fc !important
 .dereference
   background: #f28448 !important
 .label 
@@ -18,8 +19,9 @@
 .memory 
   width: 100%
   height: 100%
-  background: yellow * 0.2
+  background: $background
   overflow: scroll
+  padding: .5em
   .memory-item
     font-family: monospace
     text-align: center
@@ -46,7 +48,7 @@
         transform: translateX(100%)
         &:hover 
           display: none
-      &:nth-child(8n), &:nth-child(8n-1) 
+      &:nth-child(8n), &:nth-child(8n-1), &:nth-child(8n-2)
         .debug
           right: auto
           left: 0

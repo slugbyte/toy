@@ -1,4 +1,5 @@
 import * as util from './util.js'
+import * as assembler from './assembler.js'
 
 export const CAPACITY = 1024
 export const isValidAddress = util.inRange(0, CAPACITY)
@@ -11,6 +12,8 @@ export const subscribe = (cb) => {
 
 export const clear = () => {
   memory.fill(0)
+  assembler._program = {}
+  assembler._error = ''
   subscribers.forEach(cb => cb())
 }
 

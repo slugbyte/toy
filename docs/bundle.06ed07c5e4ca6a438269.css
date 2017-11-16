@@ -80,14 +80,15 @@ body {
   }
 }
 
-@media screen and (min-width: 1281px) {
+@media screen and (min-width: 1440px) {
   body {
     padding: 1em;
   }
 
   .app {
-    width: 1280px;
+    width: 1440px;
     border: 1em solid black;
+    overflow: hidden;
     margin: 0 auto;
   }
 }
@@ -106,38 +107,64 @@ body {
   background: #000 !important;
 }
 
+.machiene {
+  padding-bottom: 0.5em;
+}
+
 .machiene .clock,
 .machiene .registers {
   float: left;
   height: 5em;
 }
 
+.machiene .toolbelt {
+  float: left;
+  padding: .5em;
+  background: #0aa;
+}
+
+.machiene .chat {
+  float: left;
+}
+
 .machiene .clock {
+  float: left;
   width: 100%;
 }
 
+.machiene .decimal-to-hex {
+  float: left;
+  height: 4em;
+}
+
 .machiene .pins {
+  float: left;
   height: 6em;
 }
 
 .machiene .registers {
+  float: left;
   width: 100%;
 }
 
+.chat {
+  background: #0aa;
+  padding-top: .5em;
+  padding-bottom: 0;
+}
+
 .chat input {
-  border-top: 5px solid olive;
-  border-left: 5px solid olive;
-  border-bottom: 5px solid olive;
-  border-right: 5px solid olive;
   padding: .5em;
   background: #cccc00;
   color: #444;
 }
 
 .pins .switches {
-  background: #a38896;
+  background: #0aa;
   width: 100%;
   height: 100%;
+  padding-left: .25em;
+  padding-right: .25em;
 }
 
 .pins .switches .switch {
@@ -309,7 +336,7 @@ body {
 }
 
 .pointer {
-  background: #6190f4 !important;
+  background: #79a2fc !important;
 }
 
 .dereference {
@@ -328,8 +355,9 @@ body {
 .memory {
   width: 100%;
   height: 100%;
-  background: #333300;
+  background: #0aa;
   overflow: scroll;
+  padding: .5em;
 }
 
 .memory .memory-item {
@@ -369,7 +397,8 @@ body {
 }
 
 .memory .memory-item:hover:nth-child(8n) .debug,
-.memory .memory-item:hover:nth-child(8n-1) .debug {
+.memory .memory-item:hover:nth-child(8n-1) .debug,
+.memory .memory-item:hover:nth-child(8n-2) .debug {
   right: auto;
   left: 0;
   transform: translateX(-100%);
@@ -384,19 +413,16 @@ body {
   height: 50%;
   padding: .5em;
   padding-right: 0;
+  padding-bottom: 1em;
   font-family: monospace;
   font-size: 1.25em;
 }
 
 .registers .register-names div,
 .registers .register-values div {
-  border-top: 5px solid #444;
-  border-left: 5px solid #444;
-  border-bottom: 5px solid #fff;
-  border-right: 5px solid #fff;
   border-width: 2px;
   font-weight: bolder;
-  width: calc(100% / 5 - 0.5em);
+  width: calc(100% / 7 - 0.5em);
   margin-right: .5em;
   height: 100%;
   float: left;
@@ -407,7 +433,7 @@ body {
 }
 
 .registers .register-names {
-  background: yellow;
+  background: #0aa;
   padding-bottom: 0.25em;
 }
 
@@ -417,14 +443,49 @@ body {
 
 .registers .register-values {
   font-size: 1em;
-  background: yellow;
+  background: #0aa;
   padding-top: 0.25em;
 }
 
 .registers .register-values div {
-  background: #999900;
+  background: yellow;
   color: #000;
 }
 
+.decimal-to-hex {
+  background: #0aa;
+  padding: .5em;
+  padding-top: 0;
+}
 
-/*# sourceMappingURL=bundle.e74e142492b6df86a0ff.css.map*/
+.decimal-to-hex label,
+.decimal-to-hex input {
+  float: left;
+  height: 50%;
+  font-family: monospace;
+}
+
+.decimal-to-hex label {
+  background: #cccc00;
+  color: #000;
+  width: 20%;
+  text-align: center;
+  padding: .25em;
+}
+
+.decimal-to-hex label:first-child {
+  background: #b3b300;
+}
+
+.decimal-to-hex input {
+  width: 80%;
+  padding-left: .5em;
+  background: yellow;
+}
+
+.decimal-to-hex input[name='hex'] {
+  background: #e6e600;
+}
+
+
+/*# sourceMappingURL=bundle.06ed07c5e4ca6a438269.css.map*/

@@ -87,35 +87,44 @@ if (false) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.run = exports.reset = exports.tick = exports.HALT = exports.IN = exports.OUT = exports.NOP = exports.RANDB = exports.RANDW = exports.JGT = exports.JLT = exports.JEQ = exports.JMP = exports.LOG = exports.XOR = exports.OR = exports.AND = exports.SL = exports.SR = exports.MOD = exports.SUB = exports.ADD = exports.MOV = exports.pinSubscribe = exports.subscribe = exports.incProgramCounter = exports.togglePin = exports.setPinOff = exports.setPinOn = exports.setPin = exports.setProgramCounter = exports.setRegister = exports.toValue = exports.cpuType = exports.isInstruction = exports.isLabel = exports.isPin = exports.isPointer = exports.isConstant = exports.isDereference = exports.isRegister = exports.HALTED = exports.pinSubscribers = exports.subscribers = exports.PINS = exports.REGISTERS = exports._INSTRUCTIONS = exports._TYPES = exports._REGISTERS = exports.WORD_SIZE = undefined;
+exports.run = exports.reset = exports.tick = exports.HALT = exports.IN = exports.OUT = exports.NOP = exports.RANDB = exports.RANDW = exports.POP = exports.PUSH = exports.RET = exports.CALL = exports.JGT = exports.JLT = exports.JEQ = exports.JMP = exports.LOG = exports.XOR = exports.OR = exports.AND = exports.SL = exports.SR = exports.MOD = exports.SUB = exports.ADD = exports.MOV = exports.pinSubscribe = exports.subscribe = exports.incProgramCounter = exports.togglePin = exports.setPinOff = exports.setPinOn = exports.setPin = exports.setProgramCounter = exports.setRegister = exports.toValue = exports.cpuType = exports.isInstruction = exports.isLabel = exports.isPin = exports.isPointer = exports.isConstant = exports.isDereference = exports.isRegister = exports.HALTED = exports.pinSubscribers = exports.subscribers = exports.PINS = exports.REGISTERS = exports._INSTRUCTIONS = exports._TYPES = exports._REGISTERS = exports.WORD_SIZE = undefined;
 
 var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
 
-var _clock = __webpack_require__(5);
+var _clock = __webpack_require__(6);
 
 var clock = _interopRequireWildcard(_clock);
 
-var _memory = __webpack_require__(3);
+var _memory = __webpack_require__(4);
 
 var memory = _interopRequireWildcard(_memory);
+
+var _assembler = __webpack_require__(3);
+
+var assembler = _interopRequireWildcard(_assembler);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 // CONSTANTS
+// memory
+// 0x0 programCounter
 var WORD_SIZE = exports.WORD_SIZE = 2;
 
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
-// memory 
-// 0x0 programCounter
-var _REGISTERS = exports._REGISTERS = ['P', 'A', 'B', 'C', 'D'];
+// Z - "ebp" pointer to bottom of stack
+// S - "esp" pointer to top of stack
+var _REGISTERS = exports._REGISTERS = ['P', 'A', 'B', 'C', 'D', 'Z', 'S'];
 var _TYPES = exports._TYPES = ['INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE', 'DEREFERENCE'];
 
-var _INSTRUCTIONS = exports._INSTRUCTIONS = ['NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT'];
+var _INSTRUCTIONS = exports._INSTRUCTIONS = ['NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT', 'CALL', 'RET', 'PUSH', 'POP'];
 
 // STATE
-var REGISTERS = exports.REGISTERS = { A: 0, B: 0, C: 0, D: 0, P: 0 };
+var REGISTERS = exports.REGISTERS = {
+  A: 0, B: 0, C: 0, D: 0, P: 0,
+  Z: memory.CAPACITY, S: memory.CAPACITY
+};
 var PINS = exports.PINS = new Array(100).fill(0);
 var subscribers = exports.subscribers = [];
 var pinSubscribers = exports.pinSubscribers = [];
@@ -140,10 +149,10 @@ var HALTED = exports.HALTED = function () {
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
 var isRegister = exports.isRegister = function isRegister(value) {
-  return new RegExp('^[A-D]$').test(value);
+  return new RegExp('^[A-DSZ]$').test(value);
 };
 var isDereference = exports.isDereference = function isDereference(value) {
-  return new RegExp('^\\*[A-D]$').test(value);
+  return new RegExp('^\\*[A-DSZ]$').test(value);
 };
 var isConstant = exports.isConstant = function isConstant(value) {
   return new RegExp('^[a-f0-9]{1,4}$').test(value);
@@ -170,7 +179,7 @@ var cpuType = exports.cpuType = function cpuType(SRC) {
   if (isInstruction(SRC)) return 'INSTRUCTION';
   if (isDereference(SRC)) return 'DEREFERENCE';
   if (SRC.trim() === '') return 'BLANK';
-  throw new Error('toValue error SRC (' + SRC + ') unsuported');
+  throw new Error('TYPE ERROR (' + SRC + ') unsuported');
 };
 
 var toValue = exports.toValue = function toValue(SRC) {
@@ -178,7 +187,8 @@ var toValue = exports.toValue = function toValue(SRC) {
   if (isRegister(SRC)) return REGISTERS[SRC];
   if (isPointer(SRC)) return memory.getByte(SRC.substr(1));
   if (isConstant(SRC)) return util.hexToNum(SRC);
-  throw new Error('toValue error SRC unsuported');
+  if (isDereference(SRC)) return 'x' + util.toHexWord(REGISTERS[SRC.substr(1)]);
+  throw new Error('VALUE ERROR ' + SRC + ' unsuported');
 };
 
 var setRegister = exports.setRegister = function setRegister(num, reg) {
@@ -246,8 +256,13 @@ var pinSubscribe = exports.pinSubscribe = function pinSubscribe(cb) {
 
 // INSTRUCTIONS
 var MOV = exports.MOV = function MOV(SRC, DST) {
-  if (isRegister(DST)) setRegister(toValue(SRC), DST);
-  if (isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1));
+  SRC = isDereference(SRC) ? toValue(SRC) : SRC;
+  DST = isDereference(DST) ? toValue(DST) : DST;
+  if (isRegister(DST)) {
+    setRegister(toValue(SRC), DST);
+  } else if (isPointer(DST)) {
+    memory.setByte(toValue(SRC), DST.substr(1));
+  }
 };
 
 var ADD = exports.ADD = function ADD(SRC, DST) {
@@ -327,6 +342,42 @@ var JGT = exports.JGT = function JGT(SRCA, SRCB, DST) {
   }
 };
 
+var CALL = exports.CALL = function CALL(DST) {
+  // push current program counter to stack
+  var returnAddress = REGISTERS.P;
+  REGISTERS.S -= 2;
+  memory.setByte(returnAddress, REGISTERS.S);
+
+  var to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)));
+  setProgramCounter(to);
+};
+
+var RET = exports.RET = function RET() {
+  var ret = memory.getByte(REGISTERS.S);
+  setProgramCounter(ret);
+  REGISTERS.S += 2;
+};
+
+// push the value at the SRC into the memory location stored in the
+// stack pointer
+var PUSH = exports.PUSH = function PUSH(SRC) {
+  var val = undefined;
+  if (isDereference(SRC)) {
+    // chop "*" off "*A"
+    SRC = SRC.substr(1);
+    var _val = memory.getByte(toValue(SRC));
+  } else {
+    val = toValue(SRC);
+  }
+  REGISTERS.S -= 2;
+  memory.setByte(val, REGISTERS.S);
+};
+
+var POP = exports.POP = function POP(DST) {
+  MOV("*S", DST);
+  REGISTERS.S += 2;
+};
+
 var RANDW = exports.RANDW = function RANDW(DST) {
   MOV(util.rand(0xffff), DST);
 };
@@ -353,7 +404,8 @@ var HALT = exports.HALT = function HALT() {
 
 var ops = {
   NOP: NOP, MOV: MOV, ADD: ADD, SUB: SUB, MOD: MOD, SL: SL, SR: SR, AND: AND, XOR: XOR, OR: OR, JMP: JMP,
-  JEQ: JEQ, JLT: JLT, JGT: JGT, HALT: HALT, LOG: LOG, RANDW: RANDW, RANDB: RANDB, OUT: OUT
+  JEQ: JEQ, JLT: JLT, JGT: JGT, HALT: HALT, LOG: LOG, RANDW: RANDW, RANDB: RANDB, OUT: OUT,
+  CALL: CALL, RET: RET, PUSH: PUSH, POP: POP
 
   // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
   // TODO: RUNTIME (clock)
@@ -370,15 +422,15 @@ var ops = {
     if (type === 'REGISTER') {
       args.push(_REGISTERS[memory.getByte(REGISTERS.P)]);
       incProgramCounter();
-    } else if (type === 'DEREFERENCE') {
-      args.push('x' + util.toHexWord(REGISTERS[_REGISTERS[memory.getByte(REGISTERS.P)]]));
-      incProgramCounter();
     } else if (type === 'POINTER') {
       args.push('x' + util.toHexWord(memory.getWord(REGISTERS.P)));
       incProgramCounter(2);
     } else if (type === 'CONSTANT') {
       args.push(util.toHexWord(memory.getWord(REGISTERS.P)));
       incProgramCounter(2);
+    } else if (type === 'DEREFERENCE') {
+      args.push("*" + _REGISTERS[memory.getByte(REGISTERS.P)]);
+      incProgramCounter();
     }
   }
 
@@ -391,6 +443,10 @@ var reset = exports.reset = function reset() {
   _REGISTERS.forEach(function (name) {
     REGISTERS[name] = 0;
   });
+
+  REGISTERS.Z = memory.CAPACITY;
+  REGISTERS.S = memory.CAPACITY;
+
   PINS.fill(0);
   HALTED.setTrue();
   subscribers.forEach(function (cb) {
@@ -695,11 +751,284 @@ var rand = exports.rand = function rand(max) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.build = exports.setProgram = exports.assemble = exports.transform = exports.parser = exports.tokenizer = exports._text = exports._error = exports._program = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _cpu = __webpack_require__(1);
+
+var cpu = _interopRequireWildcard(_cpu);
+
+var _util = __webpack_require__(2);
+
+var util = _interopRequireWildcard(_util);
+
+var _memory = __webpack_require__(4);
+
+var memory = _interopRequireWildcard(_memory);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // parse line into
+
+// state
+var _program = exports._program = {};
+var _error = exports._error = '';
+var _text = exports._text = '\n_main\n  MOV 10 A\n  MOV ab *A\n  HALT\n'.trim();
+
+var Bug = function (_Error) {
+  _inherits(Bug, _Error);
+
+  function Bug(_ref) {
+    var index = _ref.index,
+        token = _ref.token,
+        message = _ref.message;
+
+    _classCallCheck(this, Bug);
+
+    return _possibleConstructorReturn(this, (Bug.__proto__ || Object.getPrototypeOf(Bug)).call(this, 'index:' + index + ' token:' + token.value + ' ' + message));
+  }
+
+  return Bug;
+}(Error);
+
+// string -> tokens
+
+
+var tokenizer = exports.tokenizer = function tokenizer(program) {
+  return program.trim().split('\n').map(function (statement) {
+    return statement.trim().split(' ').map(function (token) {
+      return {
+        type: cpu.cpuType(token),
+        value: token
+      };
+    });
+  }).reduce(function (result, statement) {
+    return result.concat(statement);
+  }, []).filter(function (token) {
+    return token.type !== 'BLANK';
+  });
+};
+
+// tokens -> AST
+var parser = exports.parser = function parser(tokens) {
+  var wasJUMP = false;
+  var isJUMP = function isJUMP(token) {
+    if (['JMP', 'JLT', 'JEQ', 'JGT', 'CALL'].includes(token.value)) {
+      wasJUMP = true;
+      return wasJUMP;
+    } else {
+      wasJUMP = false;
+      return wasJUMP;
+    }
+  };
+
+  var program = {
+    type: 'PROGRAM',
+    body: []
+  };
+
+  tokens.forEach(function (token, i) {
+    var label = program.body[program.body.length - 1];
+    switch (token.type) {
+      case 'LABEL':
+        if (wasJUMP) {
+          wasJUMP = false;
+          if (!label.body) throw new Bug({
+            token: token,
+            index: i,
+            message: 'ARGUMENT needs a INSTRUCTION'
+          });
+          var _instruction = label.body[label.body.length - 1];
+          if (!_instruction || !_instruction.params) throw new Bug({
+            token: token,
+            index: i,
+            message: 'ARGUMENT needs a INSTRUCTION'
+          });
+          _instruction.params.push(token);
+        } else {
+          program.body.push(_extends({
+            body: []
+          }, token));
+        }
+        break;
+      case 'INSTRUCTION':
+        if (!label.body) throw new Bug({
+          token: token,
+          index: i,
+          message: 'INSTRUCTION bust be in a label'
+        });
+        isJUMP(token);
+        label.body.push(_extends({
+          params: []
+        }, token));
+        break;
+      //ARGUMENTS
+      default:
+        if (!label.body) throw new Bug({
+          token: token,
+          index: i,
+          message: 'ARGUMENT needs a INSTRUCTION'
+        });
+        var instruction = label.body[label.body.length - 1];
+        if (!instruction || !instruction.params) throw new Bug({
+          token: token,
+          index: i,
+          message: 'ARGUMENT needs a INSTRUCTION'
+        });
+        instruction.params.push(token);
+    }
+  });
+  return program;
+};
+
+// BYTECODE DEF
+// Instruction  WORD [VALUE]
+// Register     BYTE BYTE [TYPE] [VALUE]
+// Pointer      BYTE WORD [TYPE] [VALUE]
+// Constant     BYTE WORD [TYPE] [VALUE]
+// Pin          BYTE WORD [TYPE] [VALUE]
+
+// AST -> bytecode
+var transform = exports.transform = function transform(ast) {
+  // compile program
+  //   compile label
+  //     compile instruction
+  //     compile argument
+  //     compute label pointers
+  var debug = [];
+  var typeToByte = function typeToByte(type) {
+    return util.toHexByte(cpu._TYPES.indexOf(type));
+  };
+  var toByteCode = function toByteCode(token, isDest) {
+    switch (token.type) {
+      case 'INSTRUCTION':
+        return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value));
+      case 'REGISTER':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value));
+      case 'DEREFERENCE':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)));
+      case 'CONSTANT':
+        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
+      case 'POINTER':
+        return typeToByte(token.type) + util.toHexWord(token.value.substr(1));
+      case 'PIN':
+        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
+      case 'LABEL':
+        return '=' + token.value + '=';
+    }
+  };
+
+  var lastSize = 0;
+  var totalOffset = 0;
+  var labels = ast.body.map(function (label) {
+    var instructions = label.body.map(function (instruction) {
+      var paramOffset = totalOffset + 2;
+      var params = instruction.params.map(function (param, i) {
+        // param bytecode and size
+        var isDest = i == instruction.params.length - 1;
+        var bytecode = toByteCode(param, isDest);
+        var size = param.type === 'LABEL' ? 3 : bytecode.length / 2;
+        var debug = _extends({}, param, { size: size, offset: paramOffset });
+        paramOffset += size;
+        return { param: param, bytecode: bytecode, size: size, debug: debug };
+      });
+
+      // instruction bytecode and size
+      var instructionWord = toByteCode(instruction);
+      var bytecode = [instructionWord].concat(params.map(function (p) {
+        return p.bytecode;
+      }).join('')).join('');
+      var size = params.reduce(function (r, p) {
+        return p.size + r;
+      }, 2);
+      debug.push({ type: instruction.type, name: instruction.value, size: 2, offset: totalOffset });
+      debug = debug.concat(params.map(function (p) {
+        return p.debug;
+      }));
+      totalOffset += size;
+      return { instruction: instruction, instructionWord: instructionWord, params: params, bytecode: bytecode, size: size };
+    });
+
+    // label bytecode and size
+    var bytecode = instructions.map(function (c) {
+      return c.bytecode;
+    }).join('');
+    var offset = lastSize;
+    var size = instructions.reduce(function (r, i) {
+      return r + i.size;
+    }, 0);
+    lastSize += size;
+    return { label: label, instructions: instructions, bytecode: bytecode, size: size, offset: offset };
+  });
+
+  // program bytecode and size
+  var bytecode = labels.map(function (l) {
+    return l.bytecode;
+  }).join('');
+  var size = labels.reduce(function (r, l) {
+    return r + l.size;
+  }, 0);
+
+  // replace lables with memory address
+  var pointerType = typeToByte('POINTER');
+
+  // replace labels with pointers
+  bytecode = labels.reduce(function (r, label) {
+    var address = pointerType + util.toHexWord(label.offset);
+    //console.log(label.label.value , label.offset, address)
+    return r.replace(new RegExp('=' + label.label.value + '=', 'g'), address);
+  }, bytecode);
+
+  return { ast: ast, labels: labels, bytecode: bytecode, size: size, debug: debug };
+};
+
+var assemble = exports.assemble = function assemble(program) {
+  return transform(parser(tokenizer(program)));
+};
+
+var setProgram = exports.setProgram = function setProgram(text) {
+  exports._text = _text = text;
+};
+
+var build = exports.build = function build() {
+  try {
+    memory.clear();
+    exports._program = _program = assemble(_text);
+    exports._error = _error = '';
+    cpu.reset();
+    memory.load(_program.bytecode);
+  } catch (err) {
+    console.error('__BUILD_ERROR__', err);
+    exports._error = _error = err.message;
+  }
+};
+
+build();
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.getWord = exports.setWord = exports.getByte = exports.setByte = exports.load = exports.clear = exports.subscribe = exports.subscribers = exports.memory = exports.isValidAddress = exports.CAPACITY = undefined;
 
 var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
+
+var _assembler = __webpack_require__(3);
+
+var assembler = _interopRequireWildcard(_assembler);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -714,6 +1043,8 @@ var subscribe = exports.subscribe = function subscribe(cb) {
 
 var clear = exports.clear = function clear() {
   memory.fill(0);
+  assembler._program = {};
+  assembler._error = '';
   subscribers.forEach(function (cb) {
     return cb();
   });
@@ -769,7 +1100,7 @@ var getWord = exports.getWord = function getWord(index) {
 };
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -811,7 +1142,7 @@ emptyFunction.thatReturnsArgument = function (arg) {
 module.exports = emptyFunction;
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -901,274 +1232,6 @@ start();
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(42).setImmediate))
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.build = exports.setProgram = exports.assemble = exports.transform = exports.parser = exports.tokenizer = exports._text = exports._error = exports._program = undefined;
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _cpu = __webpack_require__(1);
-
-var cpu = _interopRequireWildcard(_cpu);
-
-var _util = __webpack_require__(2);
-
-var util = _interopRequireWildcard(_util);
-
-var _memory = __webpack_require__(3);
-
-var memory = _interopRequireWildcard(_memory);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // parse line into 
-
-// state
-var _program = exports._program = {};
-var _error = exports._error = '';
-var _text = exports._text = '\n_main\n    OUT 1 0\n    JMP _on\n\n_loop\n    JGT A 64 _flip\n    OUT x80 A\n    ADD 1 A\n    JMP _loop\n\n_flip\n    MOV 0 A\n    JGT x80 0 _off\n    JMP _on\n\n_on\n    MOV 1 x80\n    JMP _loop\n    \n_off\n    MOV 0 x80\n    JMP _loop\n'.trim();
-
-var Bug = function (_Error) {
-  _inherits(Bug, _Error);
-
-  function Bug(_ref) {
-    var index = _ref.index,
-        token = _ref.token,
-        message = _ref.message;
-
-    _classCallCheck(this, Bug);
-
-    return _possibleConstructorReturn(this, (Bug.__proto__ || Object.getPrototypeOf(Bug)).call(this, 'index:' + index + ' token:' + token.value + ' ' + message));
-  }
-
-  return Bug;
-}(Error);
-
-// string -> tokens
-
-
-var tokenizer = exports.tokenizer = function tokenizer(program) {
-  return program.trim().split('\n').map(function (statement) {
-    return statement.trim().split(' ').map(function (token) {
-      return {
-        type: cpu.cpuType(token),
-        value: token
-      };
-    });
-  }).reduce(function (result, statement) {
-    return result.concat(statement);
-  }, []).filter(function (token) {
-    return token.type !== 'BLANK';
-  });
-};
-
-// tokens -> AST
-var parser = exports.parser = function parser(tokens) {
-  var wasJUMP = false;
-  var isJUMP = function isJUMP(token) {
-    if (['JMP', 'JLT', 'JEQ', 'JGT'].includes(token.value)) {
-      wasJUMP = true;
-      return wasJUMP;
-    } else {
-      wasJUMP = false;
-      return wasJUMP;
-    }
-  };
-
-  var program = {
-    type: 'PROGRAM',
-    body: []
-  };
-
-  tokens.forEach(function (token, i) {
-    var label = program.body[program.body.length - 1];
-    switch (token.type) {
-      case 'LABEL':
-        if (wasJUMP) {
-          wasJUMP = false;
-          if (!label.body) throw new Bug({
-            token: token,
-            index: i,
-            message: 'ARGUMENT needs a INSTRUCTION'
-          });
-          var _instruction = label.body[label.body.length - 1];
-          if (!_instruction || !_instruction.params) throw new Bug({
-            token: token,
-            index: i,
-            message: 'ARGUMENT needs a INSTRUCTION'
-          });
-          _instruction.params.push(token);
-        } else {
-          program.body.push(_extends({
-            body: []
-          }, token));
-        }
-        break;
-      case 'INSTRUCTION':
-        if (!label.body) throw new Bug({
-          token: token,
-          index: i,
-          message: 'INSTRUCTION bust be in a label'
-        });
-        isJUMP(token);
-        label.body.push(_extends({
-          params: []
-        }, token));
-        break;
-      //ARGUMENTS
-      default:
-        if (!label.body) throw new Bug({
-          token: token,
-          index: i,
-          message: 'ARGUMENT needs a INSTRUCTION'
-        });
-        var instruction = label.body[label.body.length - 1];
-        if (!instruction || !instruction.params) throw new Bug({
-          token: token,
-          index: i,
-          message: 'ARGUMENT needs a INSTRUCTION'
-        });
-        instruction.params.push(token);
-    }
-  });
-  return program;
-};
-
-// BYTECODE DEF
-// Instruction  WORD [VALUE]
-// Register     BYTE BYTE [TYPE] [VALUE]
-// Pointer      BYTE WORD [TYPE] [VALUE]
-// Constant     BYTE WORD [TYPE] [VALUE]
-// Pin          BYTE WORD [TYPE] [VALUE]
-
-// AST -> bytecode
-var transform = exports.transform = function transform(ast) {
-  // compile program
-  //   compile label
-  //     compile instruction 
-  //     compile argument
-  //     compute label pointers
-  var debug = [];
-  var typeToByte = function typeToByte(type) {
-    return util.toHexByte(cpu._TYPES.indexOf(type));
-  };
-  var toByteCode = function toByteCode(token) {
-    switch (token.type) {
-      case 'INSTRUCTION':
-        return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value));
-      case 'REGISTER':
-        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value));
-      case 'DEREFERENCE':
-        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)));
-      case 'CONSTANT':
-        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
-      case 'POINTER':
-        return typeToByte(token.type) + util.toHexWord(token.value.substr(1));
-      case 'PIN':
-        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value));
-      case 'LABEL':
-        return '=' + token.value + '=';
-    }
-  };
-
-  var lastSize = 0;
-  var totalOffset = 0;
-  var labels = ast.body.map(function (label) {
-    var instructions = label.body.map(function (instruction) {
-      var paramOffset = totalOffset + 2;
-      var params = instruction.params.map(function (param) {
-        // param bytecode and size
-        var bytecode = toByteCode(param);
-        var size = param.type === 'LABEL' ? 3 : bytecode.length / 2;
-        var debug = _extends({}, param, { size: size, offset: paramOffset });
-        paramOffset += size;
-        return { param: param, bytecode: bytecode, size: size, debug: debug };
-      });
-
-      // instruction bytecode and size
-      var instructionWord = toByteCode(instruction);
-      var bytecode = [instructionWord].concat(params.map(function (p) {
-        return p.bytecode;
-      }).join('')).join('');
-      var size = params.reduce(function (r, p) {
-        return p.size + r;
-      }, 2);
-      debug.push({ type: instruction.type, name: instruction.value, size: 2, offset: totalOffset });
-      debug = debug.concat(params.map(function (p) {
-        return p.debug;
-      }));
-      totalOffset += size;
-      return { instruction: instruction, instructionWord: instructionWord, params: params, bytecode: bytecode, size: size };
-    });
-
-    // label bytecode and size
-    var bytecode = instructions.map(function (c) {
-      return c.bytecode;
-    }).join('');
-    var offset = lastSize;
-    var size = instructions.reduce(function (r, i) {
-      return r + i.size;
-    }, 0);
-    lastSize += size;
-    return { label: label, instructions: instructions, bytecode: bytecode, size: size, offset: offset };
-  });
-
-  // program bytecode and size
-  var bytecode = labels.map(function (l) {
-    return l.bytecode;
-  }).join('');
-  var size = labels.reduce(function (r, l) {
-    return r + l.size;
-  }, 0);
-
-  // replace lables with memory address
-  var pointerType = typeToByte('POINTER');
-
-  // replace labels with pointers
-  bytecode = labels.reduce(function (r, label) {
-    var address = pointerType + util.toHexWord(label.offset);
-    //console.log(label.label.value , label.offset, address)
-    return r.replace(new RegExp('=' + label.label.value + '=', 'g'), address);
-  }, bytecode);
-
-  return { ast: ast, labels: labels, bytecode: bytecode, size: size, debug: debug };
-};
-
-var assemble = exports.assemble = function assemble(program) {
-  return transform(parser(tokenizer(program)));
-};
-
-var setProgram = exports.setProgram = function setProgram(text) {
-  exports._text = _text = text;
-};
-
-var build = exports.build = function build() {
-  try {
-    exports._program = _program = assemble(_text);
-    exports._error = _error = '';
-    cpu.reset();
-    memory.clear();
-    memory.load(_program.bytecode);
-  } catch (err) {
-    console.error('__BUILD_ERROR__', err);
-    exports._error = _error = err.message;
-  }
-};
-
-build();
-
-/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1183,7 +1246,7 @@ build();
 
 
 
-var emptyFunction = __webpack_require__(4);
+var emptyFunction = __webpack_require__(5);
 
 /**
  * Similar to invariant but only logs a warning if the condition is not met.
@@ -22607,19 +22670,19 @@ var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
 
-var _clock = __webpack_require__(5);
+var _clock = __webpack_require__(6);
 
 var clock = _interopRequireWildcard(_clock);
 
-var _audio = __webpack_require__(67);
+var _audio = __webpack_require__(69);
 
 var audio = _interopRequireWildcard(_audio);
 
-var _memory = __webpack_require__(3);
+var _memory = __webpack_require__(4);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(6);
+var _assembler = __webpack_require__(3);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -22668,7 +22731,7 @@ var objectAssign$1 = __webpack_require__(10);
 var require$$0 = __webpack_require__(7);
 var emptyObject = __webpack_require__(14);
 var invariant = __webpack_require__(8);
-var emptyFunction = __webpack_require__(4);
+var emptyFunction = __webpack_require__(5);
 var checkPropTypes = __webpack_require__(11);
 
 /**
@@ -24427,7 +24490,7 @@ var _assign = __webpack_require__(10);
 var EventListener = __webpack_require__(26);
 var require$$0 = __webpack_require__(7);
 var hyphenateStyleName = __webpack_require__(27);
-var emptyFunction = __webpack_require__(4);
+var emptyFunction = __webpack_require__(5);
 var camelizeStyleName = __webpack_require__(29);
 var performanceNow = __webpack_require__(31);
 var propTypes = __webpack_require__(12);
@@ -41643,7 +41706,7 @@ module.exports = ReactDOMFiberEntry;
  * @typechecks
  */
 
-var emptyFunction = __webpack_require__(4);
+var emptyFunction = __webpack_require__(5);
 
 /**
  * Upstream version of event listener. Does not take into account specific
@@ -41940,7 +42003,7 @@ module.exports = performance || {};
 
 
 
-var emptyFunction = __webpack_require__(4);
+var emptyFunction = __webpack_require__(5);
 var invariant = __webpack_require__(8);
 var warning = __webpack_require__(7);
 var assign = __webpack_require__(10);
@@ -42732,7 +42795,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 __webpack_require__(41);
 
-var _clock = __webpack_require__(5);
+var _clock = __webpack_require__(6);
 
 var clock = _interopRequireWildcard(_clock);
 
@@ -43263,11 +43326,11 @@ var _cpu = __webpack_require__(1);
 
 var cpu = _interopRequireWildcard(_cpu);
 
-var _memory = __webpack_require__(3);
+var _memory = __webpack_require__(4);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(6);
+var _assembler = __webpack_require__(3);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -45664,6 +45727,10 @@ var _registers = __webpack_require__(65);
 
 var _registers2 = _interopRequireDefault(_registers);
 
+var _decimalToHex = __webpack_require__(67);
+
+var _decimalToHex2 = _interopRequireDefault(_decimalToHex);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -45692,8 +45759,13 @@ var Machiene = function (_React$Component) {
       return React.createElement(
         'div',
         { className: 'machiene' },
-        React.createElement(_clock2.default, null),
-        React.createElement(_chat2.default, null),
+        React.createElement(
+          'div',
+          { className: 'toolbelt' },
+          React.createElement(_clock2.default, null),
+          React.createElement(_chat2.default, null)
+        ),
+        React.createElement(_decimalToHex2.default, null),
         React.createElement(_pins2.default, null),
         React.createElement(_registers2.default, null),
         React.createElement(_memory2.default, null)
@@ -45732,7 +45804,7 @@ var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
 
-var _assembler = __webpack_require__(6);
+var _assembler = __webpack_require__(3);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -45968,7 +46040,7 @@ var _cpu = __webpack_require__(1);
 
 var cpu = _interopRequireWildcard(_cpu);
 
-var _clock = __webpack_require__(5);
+var _clock = __webpack_require__(6);
 
 var clock = _interopRequireWildcard(_clock);
 
@@ -45976,11 +46048,11 @@ var _dom = __webpack_require__(13);
 
 var dom = _interopRequireWildcard(_dom);
 
-var _memory = __webpack_require__(3);
+var _memory = __webpack_require__(4);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(6);
+var _assembler = __webpack_require__(3);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -46096,15 +46168,15 @@ var _util = __webpack_require__(2);
 
 var util = _interopRequireWildcard(_util);
 
-var _clock = __webpack_require__(5);
+var _clock = __webpack_require__(6);
 
 var clock = _interopRequireWildcard(_clock);
 
-var _memory = __webpack_require__(3);
+var _memory = __webpack_require__(4);
 
 var memory = _interopRequireWildcard(_memory);
 
-var _assembler = __webpack_require__(6);
+var _assembler = __webpack_require__(3);
 
 var assembler = _interopRequireWildcard(_assembler);
 
@@ -46333,6 +46405,113 @@ exports.default = Registers;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/* WEBPACK VAR INJECTION */(function(React) {
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+__webpack_require__(68);
+
+var _util = __webpack_require__(2);
+
+var util = _interopRequireWildcard(_util);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var DecimalToHex = function (_React$Component) {
+  _inherits(DecimalToHex, _React$Component);
+
+  function DecimalToHex(props) {
+    _classCallCheck(this, DecimalToHex);
+
+    var _this = _possibleConstructorReturn(this, (DecimalToHex.__proto__ || Object.getPrototypeOf(DecimalToHex)).call(this, props));
+
+    _this.handleChange = function (e) {
+      var _e$target = e.target,
+          name = _e$target.name,
+          value = _e$target.value;
+
+      var decimal = void 0,
+          hex = void 0;
+
+      if (name == 'hex') {
+        value = value.replace(new RegExp('[^0-9a-fA-F]', 'g'), '');
+        _this.setState({
+          hex: value,
+          decimal: util.hexToNum(value || 0)
+        });
+      } else {
+        value = value.replace(new RegExp('[^0-9]', 'g'), '');
+        _this.setState({
+          hex: util.numToHex(value || 0),
+          decimal: value
+        });
+      }
+    };
+
+    _this.state = {
+      decimal: 255,
+      hex: 'ff'
+    };
+    return _this;
+  }
+
+  _createClass(DecimalToHex, [{
+    key: 'render',
+    value: function render() {
+      return React.createElement(
+        'div',
+        { className: 'decimal-to-hex' },
+        React.createElement(
+          'label',
+          null,
+          ' hex '
+        ),
+        React.createElement('input', {
+          name: 'hex',
+          value: this.state.hex,
+          onChange: this.handleChange
+        }),
+        React.createElement(
+          'label',
+          null,
+          ' decimal '
+        ),
+        React.createElement('input', {
+          name: 'decimal',
+          value: this.state.decimal,
+          onChange: this.handleChange
+        })
+      );
+    }
+  }]);
+
+  return DecimalToHex;
+}(React.Component);
+
+exports.default = DecimalToHex;
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 68 */
+/***/ (function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ }),
+/* 69 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 
 
 Object.defineProperty(exports, "__esModule", {
@@ -46524,4 +46703,4 @@ var patch = exports.patch = function patch() {
 
 /***/ })
 /******/ ]);
-//# sourceMappingURL=bundle.e74e142492b6df86a0ff.js.map
+//# sourceMappingURL=bundle.06ed07c5e4ca6a438269.js.map

@@ -1,4 +1,4 @@
-// memory 
+// memory
 // 0x0 programCounter
 import * as util from './util.js'
 import * as clock from './clock.js'
@@ -9,23 +9,29 @@ import * as assembler from './assembler.js'
 export const WORD_SIZE = 2
 
 // USED FOR INDEXING WHEN PARSING AND EXECUTING
-export const _REGISTERS = ['P', 'A', 'B', 'C', 'D']
+// Z - "ebp" pointer to bottom of stack
+// S - "esp" pointer to top of stack
+export const _REGISTERS = ['P', 'A', 'B', 'C', 'D', 'Z', 'S']
 export const _TYPES = [
   'INSTRUCTION', 'CONSTANT', 'REGISTER', 'POINTER', 'PIN', 'VARIABLE', 'DEREFERENCE'
 ]
 
-export const _INSTRUCTIONS = [ 
-  'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP', 
+export const _INSTRUCTIONS = [
+  'NOP', 'MOV', 'ADD', 'SUB', 'MOD', 'SL', 'SR', 'AND', 'XOR', 'OR', 'JMP',
   'JEQ', 'JLT', 'JGT', 'INTR', 'HALT', 'LOG', 'RANDW', 'RANDB', 'IN', 'OUT',
-] 
+  'CALL', 'RET', 'PUSH', 'POP'
+]
 
 // STATE
-export const REGISTERS = { A: 0, B: 0, C: 0, D: 0 , P: 0 }
+export const REGISTERS = {
+  A: 0, B: 0, C: 0, D: 0, P: 0,
+  Z: memory.CAPACITY, S: memory.CAPACITY
+}
 export const PINS = new Array(100).fill(0)
 export const subscribers =  []
 export const pinSubscribers = []
 export let HALTED = (() => {
-  let state = true 
+  let state = true
   return {
     setTrue: () => state = true,
     setFalse: () => state = false,
@@ -36,8 +42,8 @@ export let HALTED = (() => {
 
 // HELPERS
 // TODO: Constant and Pointer length should be option and upto 4 bytes
-export const isRegister = (value) => new RegExp('^[A-D]$').test(value) 
-export const isDereference = (value) => new RegExp('^\\*[A-D]$').test(value)
+export const isRegister = (value) => new RegExp('^[A-DSZ]$').test(value)
+export const isDereference = (value) => new RegExp('^\\*[A-DSZ]$').test(value)
 export const isConstant = (value) => new RegExp('^[a-f0-9]{1,4}$').test(value)
 export const isPointer = (value) => new RegExp('^x[a-f0-9]{1,4}$').test(value)
 export const isPin = (value) => new RegExp('^#[a-f0-9]{1,4}$').test(value)
@@ -53,7 +59,7 @@ export const cpuType = (SRC) => {
   if(isInstruction(SRC)) return 'INSTRUCTION'
   if(isDereference(SRC)) return 'DEREFERENCE'
   if(SRC.trim() === '') return 'BLANK'
-  throw new Error(`toValue error SRC (${SRC}) unsuported`)
+  throw new Error(`TYPE ERROR (${SRC}) unsuported`)
 }
 
 export const toValue = (SRC) => {
@@ -61,7 +67,8 @@ export const toValue = (SRC) => {
   if(isRegister(SRC)) return REGISTERS[SRC]
   if(isPointer(SRC)) return memory.getByte(SRC.substr(1))
   if(isConstant(SRC)) return util.hexToNum(SRC)
-  throw new Error('toValue error SRC unsuported')
+  if(isDereference(SRC)) return 'x' + util.toHexWord(REGISTERS[SRC.substr(1)])
+  throw new Error(`VALUE ERROR ${SRC} unsuported`)
 }
 
 export const setRegister = (num, reg) => {
@@ -91,7 +98,7 @@ export const setPinOff = (index) => {
   pinSubscribers.forEach(cb => cb())
 }
 
-export const togglePin = (index) => { 
+export const togglePin = (index) => {
   PINS[index] = !!PINS[index] ? 0 : 1
   pinSubscribers.forEach(cb => cb())
 }
@@ -111,11 +118,15 @@ export const pinSubscribe = (cb) => {
   pinSubscribers.push(cb)
 }
 
-
 // INSTRUCTIONS
 export const MOV = (SRC, DST) => {
-  if(isRegister(DST)) setRegister(toValue(SRC), DST)
-  if(isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1))
+  SRC = isDereference(SRC) ? toValue(SRC) : SRC
+  DST = isDereference(DST) ? toValue(DST) : DST
+  if(isRegister(DST)) {
+    setRegister(toValue(SRC), DST)
+  } else if(isPointer(DST)) {
+    memory.setByte(toValue(SRC), DST.substr(1))
+  }
 }
 
 export const ADD = (SRC, DST) => {
@@ -155,7 +166,7 @@ export const AND = (SRC, DST) => {
 }
 
 export const OR = (SRC, DST) => {
-  let sVal = toValue(SRC) 
+  let sVal = toValue(SRC)
   let dVal = toValue(DST)
   MOV(dVal | sVal, DST)
 }
@@ -167,7 +178,7 @@ export const XOR = (SRC, DST) => {
 }
 
 export const LOG = (SRC) => {
-  console.log(`${cpuType(SRC)} (${SRC}): ${toValue(SRC)}`) 
+  console.log(`${cpuType(SRC)} (${SRC}): ${toValue(SRC)}`)
 }
 
 export const JMP = (DST) => {
@@ -176,25 +187,61 @@ export const JMP = (DST) => {
 }
 
 export const JEQ = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal === bVal)
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JLT = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal < bVal)
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
 }
 
 export const JGT = (SRCA, SRCB, DST) => {
-  let aVal = toValue(SRCA) 
-  let bVal = toValue(SRCB) 
+  let aVal = toValue(SRCA)
+  let bVal = toValue(SRCB)
   if(aVal > bVal){
     setProgramCounter(util.limit(0, memory.CAPACITY, toValue(DST.substr(1))))
   }
+}
+
+export const CALL = (DST) => {
+  // push current program counter to stack
+  let returnAddress = REGISTERS.P
+  REGISTERS.S -= 2;
+  memory.setByte(returnAddress, REGISTERS.S);
+  
+  let to = util.limit(0, memory.CAPACITY, toValue(DST.substr(1)))
+  setProgramCounter(to)
+}
+
+export const RET = () => {
+  let ret = memory.getByte(REGISTERS.S);
+  setProgramCounter(ret)
+  REGISTERS.S += 2;
+}
+
+// push the value at the SRC into the memory location stored in the
+// stack pointer
+export const PUSH = (SRC) => {
+  let val = undefined;
+  if(isDereference(SRC)) {
+    // chop "*" off "*A"
+    SRC = SRC.substr(1);
+    let val = memory.getByte(toValue(SRC))
+  } else {
+    val = toValue(SRC)
+  }
+  REGISTERS.S -= 2
+  memory.setByte(val, REGISTERS.S)
+}
+
+export const POP = (DST) => {
+  MOV("*S", DST);
+  REGISTERS.S += 2
 }
 
 export const RANDW = (DST) => {
@@ -222,8 +269,9 @@ export const HALT = () => {
 }
 
 let ops = {
-  NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP, 
+  NOP, MOV, ADD, SUB, MOD, SL, SR, AND, XOR, OR, JMP,
   JEQ, JLT, JGT, HALT, LOG, RANDW, RANDB, OUT,
+  CALL, RET, PUSH, POP
 }
 
 // TODO: IN, OUT, PUSH, POP, CALL, RET, INTR, HALT
@@ -241,15 +289,15 @@ export const tick = () => {
     if(type === 'REGISTER'){
       args.push(_REGISTERS[memory.getByte(REGISTERS.P)])
       incProgramCounter()
-    } else if (type === 'DEREFERENCE') {
-      args.push('x' + util.toHexWord(REGISTERS[_REGISTERS[memory.getByte(REGISTERS.P)]]))
-      incProgramCounter()
     } else if (type === 'POINTER'){
       args.push('x'+ util.toHexWord(memory.getWord(REGISTERS.P)))
       incProgramCounter(2)
     } else if (type === 'CONSTANT'){
       args.push(util.toHexWord(memory.getWord(REGISTERS.P)))
       incProgramCounter(2)
+    } else if (type === 'DEREFERENCE'){
+      args.push("*" + _REGISTERS[memory.getByte(REGISTERS.P)]);
+      incProgramCounter()
     }
   }
 
@@ -262,6 +310,10 @@ export const reset = () => {
   _REGISTERS.forEach(name => {
     REGISTERS[name] = 0
   })
+  
+  REGISTERS.Z = memory.CAPACITY
+  REGISTERS.S = memory.CAPACITY
+  
   PINS.fill(0)
   HALTED.setTrue()
   subscribers.forEach(cb => cb())
@@ -275,7 +327,7 @@ export const run = () => {
 
 clock.subscribe(() => {
   try {
-    if(HALTED.get()) return 
+    if(HALTED.get()) return
     tick()
   } catch(err) {
     util.error('__CPU_ERROR__', err)

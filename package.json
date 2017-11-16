@@ -1,6 +1,6 @@
 {
   "name": "toy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,9 +21,11 @@
     "clean-webpack-plugin": "^0.1.17",
     "css-loader": "^0.28.7",
     "dotenv": "^4.0.0",
+    "express": "^4.16.2",
     "extract-text-webpack-plugin": "^3.0.2",
     "file-loader": "^1.1.5",
     "html-webpack-plugin": "^2.30.1",
+    "morgan": "^1.9.0",
     "node-sass": "^4.6.0",
     "react": "^16.0.0",
     "react-ace": "^5.5.0",

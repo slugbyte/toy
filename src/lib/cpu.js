@@ -59,7 +59,7 @@ export const cpuType = (SRC) => {
   if(isInstruction(SRC)) return 'INSTRUCTION'
   if(isDereference(SRC)) return 'DEREFERENCE'
   if(SRC.trim() === '') return 'BLANK'
-  throw new Error(`toValue error SRC (${SRC}) unsuported`)
+  throw new Error(`TYPE ERROR (${SRC}) unsuported`)
 }
 
 export const toValue = (SRC) => {
@@ -67,7 +67,8 @@ export const toValue = (SRC) => {
   if(isRegister(SRC)) return REGISTERS[SRC]
   if(isPointer(SRC)) return memory.getByte(SRC.substr(1))
   if(isConstant(SRC)) return util.hexToNum(SRC)
-  throw new Error('toValue error SRC unsuported')
+  if(isDereference(SRC)) return 'x' + util.toHexWord(REGISTERS[SRC.substr(1)])
+  throw new Error(`VALUE ERROR ${SRC} unsuported`)
 }
 
 export const setRegister = (num, reg) => {
@@ -117,16 +118,15 @@ export const pinSubscribe = (cb) => {
   pinSubscribers.push(cb)
 }
 
-
 // INSTRUCTIONS
 export const MOV = (SRC, DST) => {
-  if(isDereference(SRC)) {
-    // chop "*" off "*A"
-    SRC = SRC.substr(1);
-    let val = memory.getByte(toValue(SRC))
-    setRegister(val, DST)
-  } else if(isRegister(DST)) setRegister(toValue(SRC), DST)
-  else if(isPointer(DST)) memory.setByte(toValue(SRC), DST.substr(1))
+  SRC = isDereference(SRC) ? toValue(SRC) : SRC
+  DST = isDereference(DST) ? toValue(DST) : DST
+  if(isRegister(DST)) {
+    setRegister(toValue(SRC), DST)
+  } else if(isPointer(DST)) {
+    memory.setByte(toValue(SRC), DST.substr(1))
+  }
 }
 
 export const ADD = (SRC, DST) => {
@@ -289,9 +289,6 @@ export const tick = () => {
     if(type === 'REGISTER'){
       args.push(_REGISTERS[memory.getByte(REGISTERS.P)])
       incProgramCounter()
-    } else if (type === 'DEREFERENCE') {
-      args.push('x' + util.toHexWord(REGISTERS[_REGISTERS[memory.getByte(REGISTERS.P)]]))
-      incProgramCounter()
     } else if (type === 'POINTER'){
       args.push('x'+ util.toHexWord(memory.getWord(REGISTERS.P)))
       incProgramCounter(2)
@@ -299,8 +296,7 @@ export const tick = () => {
       args.push(util.toHexWord(memory.getWord(REGISTERS.P)))
       incProgramCounter(2)
     } else if (type === 'DEREFERENCE'){
-      let arg = "*" + _REGISTERS[memory.getByte(REGISTERS.P)];
-      args.push(arg);
+      args.push("*" + _REGISTERS[memory.getByte(REGISTERS.P)]);
       incProgramCounter()
     }
   }
@@ -315,7 +311,6 @@ export const reset = () => {
     REGISTERS[name] = 0
   })
   
-  // point the stack to the end of memory
   REGISTERS.Z = memory.CAPACITY
   REGISTERS.S = memory.CAPACITY
   

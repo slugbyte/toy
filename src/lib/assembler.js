@@ -1,4 +1,4 @@
-// parse line into 
+// parse line into
 
 import * as cpu from './cpu.js'
 import * as util from './util.js'
@@ -8,28 +8,43 @@ import * as memory from './memory.js'
 export let _program = {}
 export let _error = ''
 export let _text = `_main
+    PUSH 1
+    PUSH 2
+    PUSH 3
+    PUSH 4
+    POP D
+    POP C
+    POP B
+    POP A
+    
     OUT 1 0
-    JMP _on
-
+    CALL _on
+    JMP _loop
+    
 _loop
     JGT A 64 _flip
     OUT x80 A
     ADD 1 A
-    JMP _loop
-
-_flip
-    MOV 0 A
-    JGT x80 0 _off
-    JMP _on
-
-_on
-    MOV 1 x80
+    PUSH 69
     JMP _loop
     
+_flip
+    MOV 0 A
+    JGT x80 0 _calloff
+    CALL _on
+    JMP _loop
+    
+_calloff
+    CALL _off
+    JMP _loop
+    
+_on
+    MOV 1 x80
+    RET
+
 _off
     MOV 0 x80
-    JMP _loop`
-
+    RET`
 
 class Bug extends Error {
   constructor({index, token, message}){
@@ -53,7 +68,7 @@ export const tokenizer = (program) => {
 export const parser = (tokens) => {
   let wasJUMP = false
   let isJUMP = (token) => {
-    if (['JMP', 'JLT', 'JEQ', 'JGT'].includes(token.value)) {
+    if (['JMP', 'JLT', 'JEQ', 'JGT', 'CALL'].includes(token.value)) {
       wasJUMP = true
       return wasJUMP
     } else {
@@ -108,7 +123,7 @@ export const parser = (tokens) => {
         })
         break;
       //ARGUMENTS
-      default: 
+      default:
         if(!label.body)
           throw new Bug({
             token,
@@ -139,20 +154,23 @@ export const parser = (tokens) => {
 export const transform = (ast) => {
   // compile program
   //   compile label
-  //     compile instruction 
+  //     compile instruction
   //     compile argument
   //     compute label pointers
   let typeToByte = (type) => util.toHexByte(cpu._TYPES.indexOf(type))
-  let toByteCode = (token) => {
+  let toByteCode = (token, isDest) => {
     switch(token.type){
       case 'INSTRUCTION':
         return util.toHexWord(cpu._INSTRUCTIONS.indexOf(token.value))
       case 'REGISTER':
         return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value))
+      case 'DEREFERENCE':
+        return typeToByte(token.type) + util.toHexByte(cpu._REGISTERS.indexOf(token.value.substr(1)))
       case 'CONSTANT':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'POINTER':
-        return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
+          return typeToByte(token.type) + util.toHexWord(token.value.slice(1))
+        // return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'PIN':
         return typeToByte(token.type) + util.toHexWord(cpu.toValue(token.value))
       case 'LABEL':
@@ -163,9 +181,10 @@ export const transform = (ast) => {
   let lastSize = 0
   let labels = ast.body.map(label => {
     let instructions = label.body.map(instruction => {
-      let params = instruction.params.map(param => {
+      let params = instruction.params.map((param, i) => {
         // param bytecode and size
-        let bytecode = toByteCode(param)
+        let isDest = i == instruction.params.length - 1
+        let bytecode = toByteCode(param, isDest)
         let size = param.type === 'LABEL' ? 3 : bytecode.length / 2
         return {param, bytecode, size}
       })
@@ -179,7 +198,7 @@ export const transform = (ast) => {
 
     // label bytecode and size
     let bytecode = instructions.map(c => c.bytecode).join('')
-    let offset = lastSize 
+    let offset = lastSize
     let size = instructions.reduce((r, i) => r + i.size, 0)
     lastSize += size
     return {label, instructions, bytecode, size, offset}
@@ -223,3 +242,5 @@ export const build = () => {
     _error = err.message
   }
 }
+
+build()

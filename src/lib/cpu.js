@@ -3,6 +3,7 @@
 import * as util from './util.js'
 import * as clock from './clock.js'
 import * as memory from './memory.js'
+import * as assembler from './assembler.js'
 
 // CONSTANTS
 export const WORD_SIZE = 2

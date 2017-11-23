@@ -10,6 +10,25 @@ export const isString = (value) => typeof value === 'string'
 export const isFunction = (value) => typeof value === 'function'
 export const isArray = (value) => Array.isArray(value)
 
+// strings
+export const  lower = (text) => text.toLowerCase()
+export const  upper = (text) => text.toUpperCase()
+export const  substr = (start, count) => (text) => text.substr(start, count)
+export const  split = (delimiter) => (text) => text.split(delimiter)
+export const  padLeft = (ch, count) => (text) => {
+  let data = split('')(text)
+  for(let i=text.length; i<count; i++)
+    data.unshift(ch)
+  return data.slice(0, count).join('')
+}
+
+export const padRight = (ch, count) => (text) => {
+  let data = split('')(text)
+  for(let i=text.length; i<count; i++)
+    data.push(ch)
+  return data.slice(0, count).join('')
+}
+
 // function
 export const partial = (fn, ...defautls) => (...args) => fn(...defaults, ...args)
 export const partialRight = (fn, ...defautls) => (...args) => fn(...args, ...defaults)
@@ -45,12 +64,13 @@ export const slice = (cb) => (collection) => Array.prototype.slice.call(collecti
 export const map = (cb) => (collection) => Array.prototype.map.call(collection, cb)
 export const append = (data) => (collection) => [...collection, data]
 export const prepend = (data) => (collection) => [data, ...collection]
+export const flatMap = (cb) => compose(reduce((r, i) => concat(i)(r)), map(cb))
+export const join = (text) => (collection) => Array.prototype.join.call(collection, text)
+
 
 // maps
 export const get = (key) => (collection) => collection[key]
-
 export const set = (key, value) => (collection) => ({...collection, [key]:value})
-
 export const del = (key) => (collection) => {
   let result = {...collection}
   delete result[key]
@@ -61,9 +81,7 @@ export const del = (key) => (collection) => {
 export const inRange = (min, max) => (value) => value >= min && value <= max
 export const isByte = inRange(0, 0xff)
 export const isWord = inRange(0, 0xffff)
-
 export const limit = (min, max, value) => Math.max(min, Math.min(max, value))
-
 export const add = (a) => (b) => b + a
 export const sub = (a) => (b) => b - a
 export const mul = (a) => (b) => b * a
@@ -88,8 +106,7 @@ export const toPadedHex = (pad) => (value) => {
   value = isString(value) ? hexToNum(value) : value
   value = Math.max(value, 0)
   let hex = numToHex(value).substr(0, pad)
-  let zeros = new Array(pad - hex.length).fill(0).join('')
-  return zeros + hex
+  return padLeft('0', pad)(hex)
 }
 
 export const toHexByte = toPadedHex(2)

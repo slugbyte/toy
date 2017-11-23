@@ -1,52 +1,10 @@
 import './_editor.sass'
-import AceEditor from 'react-ace'
-import * as cpu from '../../lib/cpu.js'
-import * as memory from '../../lib/memory.js'
-import * as assembler from '../../lib/assembler.js'
+import * as dom from '../../lib/dom.js'
 
-class Editor extends React.Component {
-  constructor(props){
-    super(props)
-    this.state = { 
-      text: assembler._text || '',
-      error: '',
-    }
-  }
+const editor = dom.component({
+  type: 'div',
+  content: 'editor',
+  className: 'container editor',
+})
 
-  shouldComponentUpdate(nextProps, nextState){
-    if(this.state.text === nextState.text) return false
-    return true
-  }
-
-  handleChange = (text) => {
-    this.setState({text})
-    assembler.setProgram(text)
-  }
-
-  clear = () => {
-    this.setState({
-      text: '',
-      error: '',
-    })
-  }
-
-  render(){
-    return (
-      <div className='editor'>
-        <AceEditor 
-        theme="github"
-          mode='java'
-          onChange={this.handleChange}
-          value={this.state.text}
-          width='100%'
-          height='100%'
-          setOptions={{
-            showPrintMargin: false,
-          }}
-          />
-      </div>
-    )
-  }
-}
-
-export default Editor
+export default editor

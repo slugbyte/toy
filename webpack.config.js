@@ -6,24 +6,19 @@ require('dotenv').config()
 const {
   DefinePlugin, 
   EnvironmentPlugin,
-  ProvidePlugin,
 } = require('webpack')
 
 const CleanPlugin = require('clean-webpack-plugin')
 const UglifyPlugin = require('uglifyjs-webpack-plugin')
 const HTMLPlugin = require('html-webpack-plugin')
 const ExtractPlugin = require('extract-text-webpack-plugin')
-
 const production = process.env.NODE_ENV === 'production'
 
 let plugins = [
-  new HTMLPlugin({title: 'toy'}),
+  new HTMLPlugin({template: `${__dirname}/src/index.html`}),
   new ExtractPlugin('bundle.[hash].css'),
   new DefinePlugin({
     __DEBUG__: JSON.stringify(!production),
-  }),
-  new ProvidePlugin({
-    React: 'react',
   }),
   new EnvironmentPlugin({
     NODE_ENV: process.env.NODE_ENV
@@ -84,7 +79,7 @@ module.exports = {
         loader: 'babel-loader',
       },
       {
-        test: /\.(scss|sass)$/,
+        test: /\.(scss|sass|css)$/,
         loader: ExtractPlugin.extract({
           use: [
             'css-loader',

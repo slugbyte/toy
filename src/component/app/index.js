@@ -1,20 +1,18 @@
 import './_app.sass'
-import * as clock from '../../lib/clock.js'
-import Editor from '../editor'
-import Terminal from '../terminal'
-import Machiene from '../machiene'
+import * as dom from '../../lib/dom.js'
+import * as util from '../../lib/util.js'
 
-class App extends React.Component {
-  // re-render the app on each clock cycle
-  shouldComponentUpdate() {return false}
-  render(){
-    return (
-      <div className='app'>
-        <Editor />
-        <Machiene />
-      </div>
-    )
-  }
-}
+import editor from '../editor'
+import machiene from '../machiene'
 
-export default App
+const app = dom.component({
+  type: 'div',
+  className: 'app',
+  children: [
+    machiene,
+    editor,
+  ],
+})
+
+window.app = app
+export default app

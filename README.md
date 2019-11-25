@@ -16,7 +16,11 @@ Toy is a micro virtual-machine that I built to have a better undstanding of asse
 * `Assemble` will assemble the code in the editor and load it into the VM's memory.
 
 ## Instruction Set
-The flolowing instructions are case sensitve. 
+Everything is case sensitve.
+
+* A registers can be refrenced with is's name `A`, `B`, `C`, `D`, `Z`, `S`
+* Hex constants are written `fa`,  `13`, `0`, or `a`
+* Memory Address are written hex with a preceding x `x00`, `x80`, or `xf2` 
 
 ### NOP
 Usage: `NOP`

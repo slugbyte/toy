@@ -1,8 +1,11 @@
-# Toy 
-> a toy virtual machiene
+# [Toy](https://slugbyte.github.io/to)
+![](https://assets.slugbyte.com/github/misc/toy-header-a.png)
+![](https://assets.slugbyte.com/github/misc/toy-header-b.png)
+
+## About
+Toy is a micro virtual-machine that I built to have a better undstanding of assemblers. It has a fun GUI for inspecting the interworkings of the VM's registers and memory, as well as an interpriter for testing assembly instructions and a decimal-to-hex converter. 
 
 ## Instruction Set
-
 ## NOP
 Usage: `NOP`
 

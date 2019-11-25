@@ -18,9 +18,10 @@ Toy is a micro virtual-machine that I built to have a better undstanding of asse
 ## Instruction Set
 Everything is case sensitve.
 
-* A registers can be refrenced with is's name `A`, `B`, `C`, `D`, `Z`, `S`
-* Hex constants are written `fa`,  `13`, `0`, or `a`
-* Memory Address are written hex with a preceding x `x00`, `x80`, or `xf2` 
+* A registers can be refrenced with is's name. ie. `A`, `B`, `C`, `D`, `Z`, `S`
+* Hex constants are written. ie.`fa`,  `13`, `0`, or `a`
+* Memory Address are written hex with a preceding x. ie. `x00`, `x80`, or `xf2` 
+* Labels must begin with an _. ie. `_main`, `_loop`, or `_output`
 
 ### NOP
 Usage: `NOP`
